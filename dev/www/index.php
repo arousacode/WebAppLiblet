@@ -15,7 +15,7 @@ class Data{
     public ?bool $nullableBoolData; 
     public string $textData;
     #[TextArea]
-    public string $testData2;
+    public string $textData2;
     #[Date]
     public ?DateTime $tdData1;
     #[Time]
@@ -50,6 +50,7 @@ echo "</pre>";
 <?php $data->printHtmlInputField('boolData'); ?> <br/>
 <?php $data->printHtmlInputField('nullableBoolData'); ?> <br/>
 <?php $data->printHtmlInputField('textData'); ?> <br/>
+<?php $data->printHtmlInputField('textData2'); ?> <br/>
 <?php $data->printHtmlInputField('tdData1'); ?> <br/>
 <?php $data->printHtmlInputField('tdData2'); ?> <br/>
 <?php $data->printHtmlInputField('tdData3'); ?> <br/>
