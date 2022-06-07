@@ -57,7 +57,7 @@ trait FormOutput
             case 'object':
                 */
             default:
-                return $this->_printHtmlText($name, $useObjectValue, $elementExtraAttributes, $returnAsString);
+                return $this->_printHtmlText($prop, $useObjectValue, $elementExtraAttributes, $returnAsString);
         }
     }
 
@@ -170,10 +170,18 @@ trait FormOutput
 
 
 
-    private function _printHtmlText(string $name, $useObjectValue = true, string $elementExtraAttributes = '', bool $returnAsString = false): mixed
-    {
+    private function _printHtmlText(\ReflectionProperty $prop, $useObjectValue = true, string $elementExtraAttributes = '', bool $returnAsString = false): mixed
+    {        
+        $name=$prop->getName();
         $initValue = $useObjectValue ? $this->$name : '';
-        $fieldHTMLsrc = "<input type='text' name='$name' id='$name' value='$initValue' $elementExtraAttributes />";
+        if([] == $prop->getAttributes("ArousaCode\WebApp\Types\TextArea")){
+            //Marked as TextArea
+            $fieldHTMLsrc = "<textarea name='$name' id='$name' $elementExtraAttributes>$initValue  </textarea>";
+        }
+        else{
+            $fieldHTMLsrc = "<input type='text' name='$name' id='$name' value='$initValue' $elementExtraAttributes />";
+        }
+
         if ($returnAsString) {
             return $fieldHTMLsrc;
         } else {
