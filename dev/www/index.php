@@ -17,11 +17,11 @@ class Data{
     #[TextArea]
     public string $textData2;
     #[Date]
-    public ?DateTime $tdData1;
+    public ?\DateTime $tdData1;
     #[Time]
-    public ?DateTime $tdData2;
+    public ?\DateTime $tdData2;
     #[DateTime]
-    public ?DateTime $tdData3;
+    public ?\DateTime $tdData3;
     public int $intData;
     public float $floatData;   
 

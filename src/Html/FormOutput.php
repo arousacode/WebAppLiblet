@@ -48,9 +48,11 @@ trait FormOutput
                 return $this->_printPHPDateTime($prop, $useObjectValue, $elementExtraAttributes, $returnAsString);
                 break;
             case 'int':
+                return $this->_printHtmlNumber($name, $useObjectValue, $elementExtraAttributes, $returnAsString);
+                break;
             case 'float':
             case 'double':
-                return $this->_printHtmlNumber($name, $useObjectValue, $elementExtraAttributes, $returnAsString);
+                return $this->_printHtmlDouble($name, $useObjectValue, $elementExtraAttributes, $returnAsString);
                 break;
                 /* ## TBI 
             case 'array':
@@ -155,6 +157,7 @@ trait FormOutput
             return null;
         }
     }
+
     private function _printHtmlNumber(string $name, $useObjectValue = true, string $elementExtraAttributes = '', bool $returnAsString = false): mixed
     {
         $initValue = $useObjectValue ? $this->$name : '';
@@ -167,6 +170,17 @@ trait FormOutput
         }
     }
 
+private function _printHtmlDouble(string $name, $useObjectValue = true, string $elementExtraAttributes = '', bool $returnAsString = false): mixed
+    {
+        $initValue = $useObjectValue ? $this->$name : '';
+        $fieldHTMLsrc = "<input type='text' name='$name' title='Número decimal con signo, p.ex. 34.56 o -123.5'  pattern='^-?\d*(\.\d+)?$' id='$name' value='$initValue' $elementExtraAttributes />";
+        if ($returnAsString) {
+            return $fieldHTMLsrc;
+        } else {
+            echo $fieldHTMLsrc;
+            return null;
+        }
+    }
 
 
 
