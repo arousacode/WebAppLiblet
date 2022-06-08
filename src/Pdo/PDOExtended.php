@@ -30,6 +30,10 @@ namespace ArousaCode\WebApp\Pdo;
 trait PDOExtended
 {
     private \PDO $_db;
+    /**
+     * \ReflectionProperty[] 
+     */
+    private array $_props;
 
     /**
      * Override this property with your id column name if differente from "id"
@@ -58,6 +62,8 @@ trait PDOExtended
         if ($this->schemaName != "") {
             $this->tableName = $this->schemaName . "." . $this->tableName;
         }
+        $ref = new \ReflectionClass(static::class);
+        $this->_props = $ref->getProperties();
     }
 
 /**
@@ -66,6 +72,10 @@ trait PDOExtended
  */
     function upsert(): null|int
     {
+        if($this->getIdValue() == null){
+            return $this->insert();
+        }
+
         $cmd = "SELECT \"{$this->idColumnName}\" FROM \"{$this->tableName}\" ";
         $cmd .= "  WHERE  \"{$this->idColumnName}\" = ':ID' ";
         $sth = $this->_db->prepare($cmd);
@@ -77,18 +87,42 @@ trait PDOExtended
         }
     }
 
+    /**
+     * If the object doesn't have an ID value it will be generated so:
+     *  - We have to be in a transactin. If not in one, we will begin and commit.
+     *  - The new ID value should be get from database.
+     */
     function insert(): int
     {
-        $ref = new \ReflectionClass(static::class);
-        $props = $ref->getProperties();
-        $columnNames=$this->_getColumnsNames();
-        $columnValues=$this->_getColumnsValues();
-        $cmd = "INSERT INTO {$this->tableName} ($columnNames) VALUES ($columnValues)";
-        return 1;
+        $idValueExists=($this->getIdValue() != null);
+        $inTransaction=$this->_db->inTransaction();
+
+        if( (!$inTransaction) && (!$idValueExists) ){
+            $this->_db->beginTransaction();
+        }
+        $columnNames=$this->_getColumnNames();
+        $columnLabels=$this->_getColumnLabelsForPreparedStatement();
+        $columnValuesSt=$this->_getColumnValuesForPreparedStatement();
+        $st=$this->_db->prepare("INSERT INTO {$this->tableName} ($columnNames) VALUES ($columnLabels)");
+        $st->execute($columnValuesSt);
+        if($idValueExists){
+            $id=$this->getIdValue();
+        }
+        else{
+            $id= $this->_db->lastInsertId();
+        }
+        if( (!$inTransaction) && (!$idValueExists) ){
+            $this->_db->commit();
+        }
+        return $id;
+
     }
 
-    function update()
+    function update(): void
     {
+        $updateSt=$this->_getColumnNamesAndLabelsForUpdatePreparedStatement();
+        $values=$this->_getColumnValuesForPreparedStatement();
+        $st=$this->_db->prepare("UPDATE {$this->tableName} SET $updateSt WHERE ID=':ID'");
     }
 
     function load(?int $id): void
@@ -125,38 +159,50 @@ trait PDOExtended
     }
 
 
-    private function _getColumnsNames(): string
+    private function _getColumnQuestionMark(): string
     {
         $ref = new \ReflectionClass(static::class);
-        $props = $ref->getProperties();
+        $this->_props = $ref->getProperties();
+        $data="";
+        $separator="";
+        foreach ($this->_props as $prop) {
+            $data.=$separator.'?';
+            $separator=",";
+        }
+        return $data;
+    }
+    private function _getColumnNames(): string
+    {
+        $ref = new \ReflectionClass(static::class);
+        $this->_props = $ref->getProperties();
         $names="";
         $separator="";
-        foreach ($props as $prop) {
+        foreach ($this->_props as $prop) {
             $names.=$separator.$prop->getName();
             $separator=",";
         }
         return $names;
     }
 
-    private function _getColumnsNamesForPreparedStatement(): string
+    private function _getColumnLabelsForPreparedStatement(): string
     {
         $ref = new \ReflectionClass(static::class);
-        $props = $ref->getProperties();
+        $this->_props = $ref->getProperties();
         $names="";
         $separator="";
-        foreach ($props as $prop) {
+        foreach ($this->_props as $prop) {
             $names.=$separator.':'.$prop->getName();
             $separator=",";
         }
         return $names;
     }
-    private function _getColumnsValues(): string
+    private function _getColumnValues(): string
     {
         $ref = new \ReflectionClass(static::class);
-        $props = $ref->getProperties();
+        $this->_props = $ref->getProperties();
         $values="";
         $separator="";
-        foreach ($props as $prop) {
+        foreach ($this->_props as $prop) {
             $value=$this->{$prop->getName()};
             if($value === null){
                 $values.=$separator.'NULL';
@@ -170,24 +216,36 @@ trait PDOExtended
         return $values;
     }
 
-    private function _getColumnsValuesForPreparedStatement(): array
+    private function _getColumnNamesAndLabelsForUpdatePreparedStatement(): string
     {
         $ref = new \ReflectionClass(static::class);
-        $props = $ref->getProperties();
+        $this->_props = $ref->getProperties();
+        $data="";
+        $sep="";
+        foreach ($this->_props as $prop) {
+            $data.=$sep."{$prop->getName()}=:{$prop->getName()}";
+            $sep=",";
+        }
+        return $data;
+    }
+    private function _getColumnValuesForPreparedStatement(): array
+    {
+        $ref = new \ReflectionClass(static::class);
+        $this->_props = $ref->getProperties();
         $values=[];
-        foreach ($props as $prop) {
+        foreach ($this->_props as $prop) {
             $values[$prop->getName()]=$this->{$prop->getName()};
         }
         return $values;
     }
 
-    private function _getColumnsNamesValues(): string
+    private function _getColumnNamesValues(): string
     {
         $ref = new \ReflectionClass(static::class);
-        $props = $ref->getProperties();
+        $this->_props = $ref->getProperties();
         $values="";
         $separator="";
-        foreach ($props as $prop) {
+        foreach ($this->_props as $prop) {
             $values=$separator.$prop->getName()."=";
             $value=$this->{$prop->getName()};
             if($value === null){
