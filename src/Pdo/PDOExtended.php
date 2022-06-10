@@ -70,27 +70,33 @@ trait PDOExtended
         } else {
 
             $ref = new \ReflectionClass(static::class);
+            //Construct array with object property names.
             $props = $ref->getProperties();
-            $propertyNames=[];
-            foreach($props as $prop){
-                $propertyNames[]=$prop->getName();
+            $propertyNames = [];
+            foreach ($props as $prop) {
+                $propertyNames[] = $prop->getName();
             }
 
+            //Query field names to be loades/stored in database.
             $rs = $db->query("SELECT * FROM \"{$this->tableName}\" LIMIT 0");
             for ($i = 0; $i < $rs->columnCount(); $i++) {
-                $col = $rs->getColumnMeta($i);
-                $this->_fields[$col['name']] = $col['native_type'];
+                $name = $rs->getColumnMeta($i)['name'];
+                $type = $rs->getColumnMeta($i)['native_type'];
+                //IF database field has not a property with the same name, we don't use it.
+                if (in_array($name, $propertyNames)) {
+                    $this->_fields[$name] = $type;
+                }
             }
             apcu_store($fieldCacheName, $this->_fields);
         }
-        print_r($this->_fields);        
+        print_r($this->_fields);
     }
 
     /**
      *
      * @return null|integer new ID in case of insert.
      */
-    function upsert(): null|int
+    function upsert(): null|mixed
     {
         if ($this->getIdValue() == null) {
             return $this->insert();
@@ -139,21 +145,29 @@ trait PDOExtended
     function update(): void
     {
         $updateSt = $this->_getColumnNamesAndLabelsForUpdatePreparedStatement();
-        $values = $this->_getColumnValuesForPreparedStatement();
-        $st = $this->_db->prepare("UPDATE {$this->tableName} SET $updateSt WHERE ID=':ID'");
+        $columnValuesSt = $this->_getColumnValuesForPreparedStatement();
+        $st = $this->_db->prepare("UPDATE \"{$this->tableName}\" SET $updateSt WHERE \"{$this->idColumnName}\"=':ID'");
+        $st->execute($columnValuesSt + ["ID" => $this->getIdValue()]);
     }
 
     function load(?int $id = null): void
     {
+        $resSt = $this->_db->query("SELECT * FROM  \"{$this->tableName}\"   WHERE \"{$this->idColumnName}\"='{$this->getIdValue()}' ");
+        $rows = $resSt->fetchAll(\PDO::FETCH_ASSOC);
+        $this->_loadDataIntoObject($rows);
     }
 
     function delete(): void
     {
-        $this->_db->query("DELETE FROM {$this->tableName} WHERE {$this->idColumnName} = '" . $this->getIdValue() . "'")
+        if($this->getIdValue() == null){
+            throw new \Exception("Error: the object has no ID value");
+        }
+        $st = $this->_db->prepare("DELETE FROM \"{$this->tableName}\" WHERE \"{$this->idColumnName}\" = ':ID'");
+        $st->execute(['ID'=>$this->getIdValue() ])
             or throw new \Exception("Error trying to delete object in {$this->tableName} with  {$this->idColumnName} = '" . $this->getIdValue() . "'");
     }
 
-    function getIdValue(): ?int
+    function getIdValue(): ?mixed
     {
         return $this->${$this->idColumnName};
     }
@@ -161,34 +175,30 @@ trait PDOExtended
     {
         $resSt = $this->_db->query($cmd);
         $rows = $resSt->fetchAll(\PDO::FETCH_ASSOC);
-        return $rows;
+        $res=[];
+        foreach($rows as $row){
+            $obj=new static();
+            $obj->_loadDataIntoObject($row);
+            $res[]=$obj;
+        }
+        return $res;
     }
     private function _fetchEntry(string $cmd): null|array
     {
         $resSt = $this->_db->query($cmd);
         $rows = $resSt->fetchAll(\PDO::FETCH_ASSOC);
-        return $rows;
+        $obj=new static();
+        $obj->_loadDataIntoObject($rows);
+        return $obj;
     }
     private function _fetchValue(string $cmd): null|array
     {
         $resSt = $this->_db->query($cmd);
-        $rows = $resSt->fetchAll(\PDO::FETCH_ASSOC);
-        return $rows;
+        $rows = $resSt->fetchAll(\PDO::FETCH_NUM);
+        return $rows[0][0]; //### TBI: comprobacións.
     }
 
 
-    private function _getColumnQuestionMark(): string
-    {
-        $ref = new \ReflectionClass(static::class);
-        $this->_props = $ref->getProperties();
-        $data = "";
-        $separator = "";
-        foreach ($this->_props as $prop) {
-            $data .= $separator . '?';
-            $separator = ",";
-        }
-        return $data;
-    }
     private function _getColumnNames(): string
     {
         $ref = new \ReflectionClass(static::class);
@@ -214,24 +224,7 @@ trait PDOExtended
         }
         return $names;
     }
-    private function _getColumnValues(): string
-    {
-        $ref = new \ReflectionClass(static::class);
-        $this->_props = $ref->getProperties();
-        $values = "";
-        $separator = "";
-        foreach ($this->_props as $prop) {
-            $value = $this->{$prop->getName()};
-            if ($value === null) {
-                $values .= $separator . 'NULL';
-            } else {
-                $values .= $separator . "'" . $value . "'";
-            }
-            $separator = ",";
-        }
-        return $values;
-    }
-
+    
     private function _getColumnNamesAndLabelsForUpdatePreparedStatement(): string
     {
         $ref = new \ReflectionClass(static::class);
@@ -255,6 +248,34 @@ trait PDOExtended
         return $values;
     }
 
+
+    private function _loadDataIntoObject(array $dbdata): void{
+        /* TBI */
+
+    }
+
+    /*
+
+
+    private function _getColumnValues(): string
+    {
+        $ref = new \ReflectionClass(static::class);
+        $this->_props = $ref->getProperties();
+        $values = "";
+        $separator = "";
+        foreach ($this->_props as $prop) {
+            $value = $this->{$prop->getName()};
+            if ($value === null) {
+                $values .= $separator . 'NULL';
+            } else {
+                $values .= $separator . "'" . $value . "'";
+            }
+            $separator = ",";
+        }
+        return $values;
+    }
+
+
     private function _getColumnNamesValues(): string
     {
         $ref = new \ReflectionClass(static::class);
@@ -273,4 +294,5 @@ trait PDOExtended
         }
         return $values;
     }
+    */
 }

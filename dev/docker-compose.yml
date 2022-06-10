@@ -2,7 +2,7 @@ version: '3'
 
 services:
   webapp:
-     image: php:8.1-apache
+     image: webapp-server:php-8.1
      container_name: webapp-server
      ports:
        - "80:80"
