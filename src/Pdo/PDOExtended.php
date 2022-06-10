@@ -31,20 +31,20 @@ trait PDOExtended
 {
     private \PDO $_db;
     /**
-     * \ReflectionProperty[] 
+     * string[]  [name=>native_type]
      */
-    private array $_props;
+    private array $_fields = [];
 
     /**
      * Override this property with your id column name if differente from "id"
      */
     protected string $idColumnName = "id";
     /** Oberride this property if the table is located inside an schema. */
-    protected string $schemaName = "";
+    protected ?string $schemaName = null;
     /**
      * Override this property with the table name if differente from ClassName
      */
-    protected string $tableName = null;
+    protected ?string $tableName = null;
 
     /**
      * It is mandatory to init the library calling once in every object to the init method.
@@ -53,26 +53,46 @@ trait PDOExtended
     function initDb(\PDO $db)
     {
         $this->_db = $db;
-        if ($this->tableName != null) {
+        if ($this->tableName == null) {
             $this->tableName = end(explode('\\', static::class));
         }
         if ($this->tableName == null) {
             throw new \Exception("Error: can't find out ClassName from fqdn " . static::class);
         }
-        if ($this->schemaName != "") {
+        if ($this->schemaName != null) {
             $this->tableName = $this->schemaName . "." . $this->tableName;
         }
-        $ref = new \ReflectionClass(static::class);
-        $this->_props = $ref->getProperties();
+
+        $fieldCacheName = "AROUSA_CODE_" . static::class;
+        $res = apcu_fetch($fieldCacheName);
+        if ($res !== false) {
+            $this->_fields = $res;
+        } else {
+
+            $ref = new \ReflectionClass(static::class);
+            $props = $ref->getProperties();
+            $propertyNames=[];
+            foreach($props as $prop){
+                $propertyNames[]=$prop->getName();
+            }
+
+            $rs = $db->query("SELECT * FROM \"{$this->tableName}\" LIMIT 0");
+            for ($i = 0; $i < $rs->columnCount(); $i++) {
+                $col = $rs->getColumnMeta($i);
+                $this->_fields[$col['name']] = $col['native_type'];
+            }
+            apcu_store($fieldCacheName, $this->_fields);
+        }
+        print_r($this->_fields);        
     }
 
-/**
- *
- * @return null|integer new ID in case of insert.
- */
+    /**
+     *
+     * @return null|integer new ID in case of insert.
+     */
     function upsert(): null|int
     {
-        if($this->getIdValue() == null){
+        if ($this->getIdValue() == null) {
             return $this->insert();
         }
 
@@ -94,38 +114,36 @@ trait PDOExtended
      */
     function insert(): int
     {
-        $idValueExists=($this->getIdValue() != null);
-        $inTransaction=$this->_db->inTransaction();
+        $idValueExists = ($this->getIdValue() != null);
+        $inTransaction = $this->_db->inTransaction();
 
-        if( (!$inTransaction) && (!$idValueExists) ){
+        if ((!$inTransaction) && (!$idValueExists)) {
             $this->_db->beginTransaction();
         }
-        $columnNames=$this->_getColumnNames();
-        $columnLabels=$this->_getColumnLabelsForPreparedStatement();
-        $columnValuesSt=$this->_getColumnValuesForPreparedStatement();
-        $st=$this->_db->prepare("INSERT INTO {$this->tableName} ($columnNames) VALUES ($columnLabels)");
+        $columnNames = $this->_getColumnNames();
+        $columnLabels = $this->_getColumnLabelsForPreparedStatement();
+        $columnValuesSt = $this->_getColumnValuesForPreparedStatement();
+        $st = $this->_db->prepare("INSERT INTO {$this->tableName} ($columnNames) VALUES ($columnLabels)");
         $st->execute($columnValuesSt);
-        if($idValueExists){
-            $id=$this->getIdValue();
+        if ($idValueExists) {
+            $id = $this->getIdValue();
+        } else {
+            $id = $this->_db->lastInsertId();
         }
-        else{
-            $id= $this->_db->lastInsertId();
-        }
-        if( (!$inTransaction) && (!$idValueExists) ){
+        if ((!$inTransaction) && (!$idValueExists)) {
             $this->_db->commit();
         }
         return $id;
-
     }
 
     function update(): void
     {
-        $updateSt=$this->_getColumnNamesAndLabelsForUpdatePreparedStatement();
-        $values=$this->_getColumnValuesForPreparedStatement();
-        $st=$this->_db->prepare("UPDATE {$this->tableName} SET $updateSt WHERE ID=':ID'");
+        $updateSt = $this->_getColumnNamesAndLabelsForUpdatePreparedStatement();
+        $values = $this->_getColumnValuesForPreparedStatement();
+        $st = $this->_db->prepare("UPDATE {$this->tableName} SET $updateSt WHERE ID=':ID'");
     }
 
-    function load(?int $id): void
+    function load(?int $id = null): void
     {
     }
 
@@ -135,7 +153,7 @@ trait PDOExtended
             or throw new \Exception("Error trying to delete object in {$this->tableName} with  {$this->idColumnName} = '" . $this->getIdValue() . "'");
     }
 
-    function getIdValue(): int
+    function getIdValue(): ?int
     {
         return $this->${$this->idColumnName};
     }
@@ -163,11 +181,11 @@ trait PDOExtended
     {
         $ref = new \ReflectionClass(static::class);
         $this->_props = $ref->getProperties();
-        $data="";
-        $separator="";
+        $data = "";
+        $separator = "";
         foreach ($this->_props as $prop) {
-            $data.=$separator.'?';
-            $separator=",";
+            $data .= $separator . '?';
+            $separator = ",";
         }
         return $data;
     }
@@ -175,11 +193,11 @@ trait PDOExtended
     {
         $ref = new \ReflectionClass(static::class);
         $this->_props = $ref->getProperties();
-        $names="";
-        $separator="";
+        $names = "";
+        $separator = "";
         foreach ($this->_props as $prop) {
-            $names.=$separator.$prop->getName();
-            $separator=",";
+            $names .= $separator . $prop->getName();
+            $separator = ",";
         }
         return $names;
     }
@@ -188,11 +206,11 @@ trait PDOExtended
     {
         $ref = new \ReflectionClass(static::class);
         $this->_props = $ref->getProperties();
-        $names="";
-        $separator="";
+        $names = "";
+        $separator = "";
         foreach ($this->_props as $prop) {
-            $names.=$separator.':'.$prop->getName();
-            $separator=",";
+            $names .= $separator . ':' . $prop->getName();
+            $separator = ",";
         }
         return $names;
     }
@@ -200,18 +218,16 @@ trait PDOExtended
     {
         $ref = new \ReflectionClass(static::class);
         $this->_props = $ref->getProperties();
-        $values="";
-        $separator="";
+        $values = "";
+        $separator = "";
         foreach ($this->_props as $prop) {
-            $value=$this->{$prop->getName()};
-            if($value === null){
-                $values.=$separator.'NULL';
-
+            $value = $this->{$prop->getName()};
+            if ($value === null) {
+                $values .= $separator . 'NULL';
+            } else {
+                $values .= $separator . "'" . $value . "'";
             }
-            else{
-                $values.=$separator."'".$value."'";
-            }
-            $separator=",";
+            $separator = ",";
         }
         return $values;
     }
@@ -220,11 +236,11 @@ trait PDOExtended
     {
         $ref = new \ReflectionClass(static::class);
         $this->_props = $ref->getProperties();
-        $data="";
-        $sep="";
+        $data = "";
+        $sep = "";
         foreach ($this->_props as $prop) {
-            $data.=$sep."{$prop->getName()}=:{$prop->getName()}";
-            $sep=",";
+            $data .= $sep . "{$prop->getName()}=:{$prop->getName()}";
+            $sep = ",";
         }
         return $data;
     }
@@ -232,9 +248,9 @@ trait PDOExtended
     {
         $ref = new \ReflectionClass(static::class);
         $this->_props = $ref->getProperties();
-        $values=[];
+        $values = [];
         foreach ($this->_props as $prop) {
-            $values[$prop->getName()]=$this->{$prop->getName()};
+            $values[$prop->getName()] = $this->{$prop->getName()};
         }
         return $values;
     }
@@ -243,19 +259,17 @@ trait PDOExtended
     {
         $ref = new \ReflectionClass(static::class);
         $this->_props = $ref->getProperties();
-        $values="";
-        $separator="";
+        $values = "";
+        $separator = "";
         foreach ($this->_props as $prop) {
-            $values=$separator.$prop->getName()."=";
-            $value=$this->{$prop->getName()};
-            if($value === null){
-                $values.='NULL';
-
+            $values = $separator . $prop->getName() . "=";
+            $value = $this->{$prop->getName()};
+            if ($value === null) {
+                $values .= 'NULL';
+            } else {
+                $values .= "'" . $value . "'";
             }
-            else{
-                $values.="'".$value."'";
-            }
-            $separator=",";
+            $separator = ",";
         }
         return $values;
     }

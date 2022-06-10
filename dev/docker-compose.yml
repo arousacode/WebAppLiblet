@@ -1,9 +1,9 @@
 version: '3'
 
 services:
-  achfl-server:
+  webapp:
      image: php:8.1-apache
-     container_name: achfl-server
+     container_name: webapp-server
      ports:
        - "80:80"
      volumes:
@@ -12,3 +12,19 @@ services:
      restart: always
      tty: true
      stdin_open: true
+     build:
+        context: ./webapp-server
+        dockerfile: Dockerfile
+  postgres:
+    image: postgres:alpine
+    container_name: webapp-postgresql
+#    ports:
+#      - "5433:5432"
+    environment:
+      - POSTGRES_USER=webapp
+      - POSTGRES_PASSWORD=webapp
+      - POSTGRES_DB=webapp
+#    networks:
+#      - rede-interna
+    volumes:
+      - ./postgres/init_db:/docker-entrypoint-initdb.d

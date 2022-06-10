@@ -17,7 +17,7 @@ use ArousaCode\WebApp\Types\Date;
 use ArousaCode\WebApp\Types\DateTime;
 use ArousaCode\WebApp\Types\Time;
 use ArousaCode\WebApp\Types\TextArea;
-use ArousaCode\WebApp\Types\DateTimeType;
+use ArousaCode\WebApp\Types\WebAppType;
 
 trait FormOutput
 {
@@ -112,10 +112,10 @@ trait FormOutput
     private function _printPHPDateTime(\ReflectionProperty $prop, $useObjectValue = true, string $elementExtraAttributes = '', bool $returnAsString = false): mixed
     {
         $name = $prop->getName();
-        return match(DateTimeType::DateTimeTypeFromAttribute($prop)){
-            DateTimeType::DateTime => $this->_printHtmlDateTime($name, $useObjectValue, $elementExtraAttributes, $returnAsString),
-            DateTimeType::Date     => $this->_printHtmlDate($name, $useObjectValue, $elementExtraAttributes, $returnAsString),
-            DateTimeType::Time     => $this->_printHtmlTime($name, $useObjectValue, $elementExtraAttributes, $returnAsString),
+        return match(WebAppType::WebAppTypeFromProperty($prop)){
+            WebAppType::DateTime => $this->_printHtmlDateTime($name, $useObjectValue, $elementExtraAttributes, $returnAsString),
+            WebAppType::Date     => $this->_printHtmlDate($name, $useObjectValue, $elementExtraAttributes, $returnAsString),
+            WebAppType::Time     => $this->_printHtmlTime($name, $useObjectValue, $elementExtraAttributes, $returnAsString),
             default=> new \Exception("Error: the \DateTime property $name doesn't have defined the subtype using the library Attributes"),
         };
     }

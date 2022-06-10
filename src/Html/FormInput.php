@@ -84,10 +84,10 @@ trait FormInput
 
 
 
-    return match(HtmlFormDateTimeType::getDateTimeFormTypeFromAttribute($prop)){
-        HtmlFormDateTimeType::DateTime => $this->_printHtmlDateTime($name, $useObjectValue, $elementExtraAttributes, $returnAsString),
-        HtmlFormDateTimeType::Date     => $this->_printHtmlDate($name, $useObjectValue, $elementExtraAttributes, $returnAsString),
-        HtmlFormDateTimeType::Time     => $this->_printHtmlTime($name, $useObjectValue, $elementExtraAttributes, $returnAsString),
+    return match(HtmlFormWebAppType::getDateTimeFormTypeFromAttribute($prop)){
+        HtmlFormWebAppType::DateTime => $this->_printHtmlDateTime($name, $useObjectValue, $elementExtraAttributes, $returnAsString),
+        HtmlFormWebAppType::Date     => $this->_printHtmlDate($name, $useObjectValue, $elementExtraAttributes, $returnAsString),
+        HtmlFormWebAppType::Time     => $this->_printHtmlTime($name, $useObjectValue, $elementExtraAttributes, $returnAsString),
         default=> new \Exception("Error: the \DateTime property $name doesn't have defined the subtype using the library Attributes"),
     }*/
 }
