@@ -12,6 +12,8 @@
 
 namespace ArousaCode\WebApp\Pdo;
 
+use ArousaCode\WebApp\Types\WebAppType;
+
 /**
  * trait to add any object the cabability to be loaded and stored in a PDO database.
  * 
@@ -31,7 +33,7 @@ trait PDOExtended
 {
     private \PDO $_db;
     /**
-     * string[]  [name=>native_type]
+     * WebAppType[]  [name=>WebAppType]
      */
     private array $_fields = [];
 
@@ -54,7 +56,8 @@ trait PDOExtended
     {
         $this->_db = $db;
         if ($this->tableName == null) {
-            $this->tableName = end(explode('\\', static::class));
+            $classNameArr=explode('\\', static::class);
+            $this->tableName = end($classNameArr);
         }
         if ($this->tableName == null) {
             throw new \Exception("Error: can't find out ClassName from fqdn " . static::class);
@@ -64,7 +67,7 @@ trait PDOExtended
         }
 
         $fieldCacheName = "AROUSA_CODE_" . static::class;
-        $res = apcu_fetch($fieldCacheName);
+        $res = false; /// DEBUG descomenar. apcu_fetch($fieldCacheName);
         if ($res !== false) {
             $this->_fields = $res;
         } else {
@@ -81,7 +84,7 @@ trait PDOExtended
             $rs = $db->query("SELECT * FROM \"{$this->tableName}\" LIMIT 0");
             for ($i = 0; $i < $rs->columnCount(); $i++) {
                 $name = $rs->getColumnMeta($i)['name'];
-                $type = $rs->getColumnMeta($i)['native_type'];
+                $type = WebAppType::WebAppTypeFromDatabaseType($rs->getColumnMeta($i)['native_type']);
                 //IF database field has not a property with the same name, we don't use it.
                 if (in_array($name, $propertyNames)) {
                     $this->_fields[$name] = $type;
@@ -89,23 +92,25 @@ trait PDOExtended
             }
             apcu_store($fieldCacheName, $this->_fields);
         }
+        echo "<h1> DB TYPES </h1><pre>";
         print_r($this->_fields);
+        echo "</pre><hr/>";
     }
 
     /**
      *
      * @return null|integer new ID in case of insert.
      */
-    function upsert(): null|mixed
+    function upsert(): mixed
     {
         if ($this->getIdValue() == null) {
             return $this->insert();
         }
 
         $cmd = "SELECT \"{$this->idColumnName}\" FROM \"{$this->tableName}\" ";
-        $cmd .= "  WHERE  \"{$this->idColumnName}\" = ':ID' ";
+        $cmd .= "  WHERE  \"{$this->idColumnName}\" = ':IDWAPDOTAG' ";
         $sth = $this->_db->prepare($cmd);
-        $sth->execute([':ID' => $this->getIdValue()]);
+        $sth->execute(['IDWAPDOTAG' => $this->getIdValue()]);
         if ($sth->rowCount() == 0) {
             return $this->insert();
         } else {
@@ -129,7 +134,11 @@ trait PDOExtended
         $columnNames = $this->_getColumnNames();
         $columnLabels = $this->_getColumnLabelsForPreparedStatement();
         $columnValuesSt = $this->_getColumnValuesForPreparedStatement();
-        $st = $this->_db->prepare("INSERT INTO {$this->tableName} ($columnNames) VALUES ($columnLabels)");
+        $cmd="INSERT INTO \"{$this->tableName}\" ($columnNames) VALUES ($columnLabels)";
+        $st = $this->_db->prepare($cmd);
+        echo "<pre> $cmd \n ";
+        print_r($columnValuesSt);
+        echo "</pre>";
         $st->execute($columnValuesSt);
         if ($idValueExists) {
             $id = $this->getIdValue();
@@ -146,8 +155,8 @@ trait PDOExtended
     {
         $updateSt = $this->_getColumnNamesAndLabelsForUpdatePreparedStatement();
         $columnValuesSt = $this->_getColumnValuesForPreparedStatement();
-        $st = $this->_db->prepare("UPDATE \"{$this->tableName}\" SET $updateSt WHERE \"{$this->idColumnName}\"=':ID'");
-        $st->execute($columnValuesSt + ["ID" => $this->getIdValue()]);
+        $st = $this->_db->prepare("UPDATE \"{$this->tableName}\" SET $updateSt WHERE \"{$this->idColumnName}\"=':IDWAPDOTAG'");
+        $st->execute($columnValuesSt + ["IDWAPDOTAG" => $this->getIdValue()]);
     }
 
     function load(?int $id = null): void
@@ -162,15 +171,16 @@ trait PDOExtended
         if($this->getIdValue() == null){
             throw new \Exception("Error: the object has no ID value");
         }
-        $st = $this->_db->prepare("DELETE FROM \"{$this->tableName}\" WHERE \"{$this->idColumnName}\" = ':ID'");
-        $st->execute(['ID'=>$this->getIdValue() ])
+        $st = $this->_db->prepare("DELETE FROM \"{$this->tableName}\" WHERE \"{$this->idColumnName}\" = ':IDWAPDOTAG'");
+        $st->execute(['IDWAPDOTAG'=>$this->getIdValue() ])
             or throw new \Exception("Error trying to delete object in {$this->tableName} with  {$this->idColumnName} = '" . $this->getIdValue() . "'");
     }
 
-    function getIdValue(): ?mixed
+    function getIdValue(): mixed
     {
-        return $this->${$this->idColumnName};
+        return $this->{$this->idColumnName};
     }
+
     private function _fetchEntries(string $cmd): null|array
     {
         $resSt = $this->_db->query($cmd);
@@ -191,22 +201,22 @@ trait PDOExtended
         $obj->_loadDataIntoObject($rows);
         return $obj;
     }
-    private function _fetchValue(string $cmd): null|array
+
+/* It doesn't make sense.
+      private function _fetchValue(string $cmd): null|array
     {
         $resSt = $this->_db->query($cmd);
         $rows = $resSt->fetchAll(\PDO::FETCH_NUM);
-        return $rows[0][0]; //### TBI: comprobacións.
+        return $rows[0][0]; //### !!!!!!!!! TBI: comprobacións.
     }
-
+*/
 
     private function _getColumnNames(): string
     {
-        $ref = new \ReflectionClass(static::class);
-        $this->_props = $ref->getProperties();
         $names = "";
         $separator = "";
-        foreach ($this->_props as $prop) {
-            $names .= $separator . $prop->getName();
+        foreach (array_keys($this->_fields) as $name  ) {
+            $names .= $separator . '"'.$name. '"';
             $separator = ",";
         }
         return $names;
@@ -214,12 +224,10 @@ trait PDOExtended
 
     private function _getColumnLabelsForPreparedStatement(): string
     {
-        $ref = new \ReflectionClass(static::class);
-        $this->_props = $ref->getProperties();
         $names = "";
         $separator = "";
-        foreach ($this->_props as $prop) {
-            $names .= $separator . ':' . $prop->getName();
+        foreach (array_keys($this->_fields) as $name  ) {
+            $names .= $separator . ':' . $name;
             $separator = ",";
         }
         return $names;
@@ -227,33 +235,53 @@ trait PDOExtended
     
     private function _getColumnNamesAndLabelsForUpdatePreparedStatement(): string
     {
-        $ref = new \ReflectionClass(static::class);
-        $this->_props = $ref->getProperties();
+        
         $data = "";
         $sep = "";
-        foreach ($this->_props as $prop) {
-            $data .= $sep . "{$prop->getName()}=:{$prop->getName()}";
+        foreach (array_keys($this->_fields) as $name  ) {
+            $data .= $sep . "\"{$name}\"=:{$name}";
             $sep = ",";
         }
         return $data;
     }
     private function _getColumnValuesForPreparedStatement(): array
     {
-        $ref = new \ReflectionClass(static::class);
-        $this->_props = $ref->getProperties();
         $values = [];
-        foreach ($this->_props as $prop) {
-            $values[$prop->getName()] = $this->{$prop->getName()};
+        foreach ($this->_fields as $name => $type) {
+            $value=$this->{$name};
+            if($value !== null) {
+                $value=match($type){
+                    WebAppType::Date=>$value->format('Y-m-d'),
+                    WebAppType::DateTime=>$value->format('Y-m-d H:i:s'),
+                    WebAppType::Time=>$value->format('H:i:s'),
+                    WebAppType::Bool=>$value?'true':'false',
+                    default=>$this->{$name}
+                };
+            }
+            $values[$name] = $value;
         }
         return $values;
     }
 
 
-    private function _loadDataIntoObject(array $dbdata): void{
-        /* TBI */
-
+    private function _loadDataIntoObject(array &$dbData): void{
+        foreach($this->_fields as $name => $type){
+            $dbValue=$dbData[$name];
+            $this->{$name}=$this->_readColData($type, $dbValue);
+        }
     }
 
+    private function _readColData(WebAppType $type, mixed $data){
+        if($data === null ){
+            return null;
+        }
+        return match($type){
+            WebAppType::Date,WebAppType::DateTime, WebAppType::Time=>new \DateTime($data),
+            WebAppType::Bool=>($data==='t'),
+            default=>$data
+
+        };
+    }
     /*
 
 

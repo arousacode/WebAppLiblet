@@ -62,7 +62,7 @@ trait FormInput
                 return ($data != '') ? new \DateTime($data) : null;
                 break;
             case 'int':
-                return intval($data);
+                return ($data=='')?null:intval($data);
                 break;
             case 'float':
             case 'double':

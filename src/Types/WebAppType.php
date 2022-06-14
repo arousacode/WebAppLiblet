@@ -36,6 +36,7 @@ enum WebAppType
     case TextArea;
     case Int;
     case Float;
+    case Bool;
     case NullableBool;
     case NonNullableBool;
 
@@ -87,5 +88,25 @@ enum WebAppType
         } else {
             return null;
         }
+    }
+
+     /**
+     * Find out if the Web app type of the database column
+     *
+     * @param string $dbTypeM 
+     * @return HtmlFormWebAppType|null
+     */
+    public static function WebAppTypeFromDatabaseType(string $dbType): ?WebAppType
+    {
+        return match($dbType){
+            'int4'=>WebAppType::Int,
+            'numeric'=>WebAppType::Float,
+            'date'=>WebAppType::Date,
+            'time'=>WebAppType::Time,
+            'timestamp'=>WebAppType::DateTime,
+            'bool'=>WebAppType::Bool,
+            'text'=>WebAppType::Text,
+            default=>WebAppType::Text
+        };
     }
 }

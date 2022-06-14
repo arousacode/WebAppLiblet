@@ -21,7 +21,7 @@ class UserData
     use \ArousaCode\WebApp\Pdo\PDOExtended;
 
     public ?int $id;
-    public string $userName;
+    public string $sureName;
     public int $age;
     public float $height;
     #[DateTime]
@@ -85,7 +85,7 @@ if (isset($_POST['save'])) {
     <br />
 
     ID <?php $userData->printHtmlInputField(name: 'id', elementExtraAttributes:' readonly ' ); ?> <br />
-    Name <?php $userData->printHtmlInputField('userName'); ?> <br />
+    Name <?php $userData->printHtmlInputField('sureName'); ?> <br />
     Age <?php $userData->printHtmlInputField('age'); ?> <br />
     height <?php $userData->printHtmlInputField('height'); ?> <br />
     datebir<?php $userData->printHtmlInputField('dateOfBirth'); ?> <br />
