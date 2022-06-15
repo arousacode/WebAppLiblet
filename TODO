@@ -1,5 +1,25 @@
 https://carbon.nesbot.com/docs/#api-formatting
 
-Use external Attributes library to mark Date, Time or DateTime.
-with or without Timezone??
 
+Use small images in Form directly as inline data. store in database in Base64 format in text column.
+LIMIT SIZE!!!
+Manage in HTML form:
+ - POST image file.
+ - Manage image format.
+ - Load image preview.
+
+ Ter en conta os campos obrigatorios.
+
+ Á  hora de manexar as imaxes, facelo de xeito explícito. Dar erro se se tenta empregar como un campo de texto.
+
+ Utilizar enum Type en Form.
+
+$image = 'http://images.itracki.com/2011/06/favicon.png';
+// Read image path, convert to base64 encoding
+$imageData = base64_encode(file_get_contents($image));
+
+// Format the image SRC:  data:{mime};base64,{data};
+$src = 'data: ' . mime_content_type($image) . ';base64,' . $imageData;
+
+// Echo out a sample image
+echo '<img src="' . $src . '">';

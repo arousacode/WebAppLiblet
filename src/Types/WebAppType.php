@@ -39,6 +39,7 @@ enum WebAppType
     case Bool;
     case NullableBool;
     case NonNullableBool;
+    case Image;
 
     /**
      * Find out if the Web app type of the property
@@ -73,6 +74,8 @@ enum WebAppType
             return WebAppType::TextArea;
         } elseif ([] !== $prop->getAttributes("ArousaCode\WebApp\Types\DateTime")) {
             return WebAppType::DateTime;
+        } elseif ([] !== $prop->getAttributes("ArousaCode\WebApp\Types\Image")) {
+            return WebAppType::Image;
         } elseif ($prop->getType()->getName() == 'bool') {
             if ($prop->getType()->allowsNull()) {
                 return WebAppType::NullableBool;
