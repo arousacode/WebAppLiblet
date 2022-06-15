@@ -96,7 +96,7 @@ trait FormOutput
             $yesChecked = '  ';
             $noChecked = '  ';
         }
-        $fieldHTMLsrc = '<div $elementExtraAttributes> ';
+        $fieldHTMLsrc = "<div $elementExtraAttributes> ";
         $fieldHTMLsrc .= "<input type='button' value='X' onclick='var v=document.getElementsByName(\"$name\"); for(i=0;i<v.length;i++){v[i].checked=false;}' >\n";
         $fieldHTMLsrc .= "<input type='radio' name='$name' id='{$name}Yes' value='1' $yesChecked ><label for='{$name}Yes'>Si</label>\n";
         $fieldHTMLsrc .= "<input type='radio' name='$name' id='{$name}No' value='0' $noChecked ><label for='{$name}No'>No</label>\n";
@@ -190,7 +190,7 @@ private function _printHtmlDouble(string $name, $useObjectValue = true, string $
         $initValue = $useObjectValue ? $this->$name : '';
         if([] == $prop->getAttributes("ArousaCode\WebApp\Types\TextArea")){
             //Marked as TextArea
-            $fieldHTMLsrc = "<textarea name='$name' id='$name' $elementExtraAttributes>$initValue  </textarea>";
+            $fieldHTMLsrc = "<textarea name='$name' id='$name' $elementExtraAttributes>$initValue</textarea>";
         }
         else{
             $fieldHTMLsrc = "<input type='text' name='$name' id='$name' value='$initValue' $elementExtraAttributes />";

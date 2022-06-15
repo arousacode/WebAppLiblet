@@ -92,9 +92,9 @@ trait PDOExtended
             }
             apcu_store($fieldCacheName, $this->_fields);
         }
-        echo "<h1> DB TYPES </h1><pre>";
-        print_r($this->_fields);
-        echo "</pre><hr/>";
+//        echo "<h1> DB TYPES </h1><pre>";
+//        print_r($this->_fields);
+//        echo "</pre><hr/>";
     }
 
     /**
@@ -108,9 +108,10 @@ trait PDOExtended
         }
 
         $cmd = "SELECT \"{$this->idColumnName}\" FROM \"{$this->tableName}\" ";
-        $cmd .= "  WHERE  \"{$this->idColumnName}\" = ':IDWAPDOTAG' ";
+        $cmd .= "  WHERE  \"{$this->idColumnName}\" = :IDWAPDOTAG ";
+        //echo $cmd;
         $sth = $this->_db->prepare($cmd);
-        $sth->execute(['IDWAPDOTAG' => $this->getIdValue()]);
+        $sth->execute([':IDWAPDOTAG' => $this->getIdValue()]);
         if ($sth->rowCount() == 0) {
             return $this->insert();
         } else {
@@ -131,14 +132,14 @@ trait PDOExtended
         if ((!$inTransaction) && (!$idValueExists)) {
             $this->_db->beginTransaction();
         }
-        $columnNames = $this->_getColumnNames();
-        $columnLabels = $this->_getColumnLabelsForPreparedStatement();
-        $columnValuesSt = $this->_getColumnValuesForPreparedStatement();
+        $columnNames = $this->_getColumnNames($idValueExists);
+        $columnLabels = $this->_getColumnLabelsForPreparedStatement($idValueExists);
+        $columnValuesSt = $this->_getColumnValuesForPreparedStatement($idValueExists);
         $cmd="INSERT INTO \"{$this->tableName}\" ($columnNames) VALUES ($columnLabels)";
         $st = $this->_db->prepare($cmd);
-        echo "<pre> $cmd \n ";
-        print_r($columnValuesSt);
-        echo "</pre>";
+        //echo "<pre> $cmd \n ";
+       // print_r($columnValuesSt);
+        //echo "</pre>";
         $st->execute($columnValuesSt);
         if ($idValueExists) {
             $id = $this->getIdValue();
@@ -148,6 +149,8 @@ trait PDOExtended
         if ((!$inTransaction) && (!$idValueExists)) {
             $this->_db->commit();
         }
+        $this->setIdValue($id);
+        //echo "CREADO ID $id";
         return $id;
     }
 
@@ -155,15 +158,23 @@ trait PDOExtended
     {
         $updateSt = $this->_getColumnNamesAndLabelsForUpdatePreparedStatement();
         $columnValuesSt = $this->_getColumnValuesForPreparedStatement();
-        $st = $this->_db->prepare("UPDATE \"{$this->tableName}\" SET $updateSt WHERE \"{$this->idColumnName}\"=':IDWAPDOTAG'");
-        $st->execute($columnValuesSt + ["IDWAPDOTAG" => $this->getIdValue()]);
+        $st = $this->_db->prepare("UPDATE \"{$this->tableName}\" SET $updateSt WHERE \"{$this->idColumnName}\"=:IDWAPDOTAG");
+        $st->execute($columnValuesSt + [":IDWAPDOTAG" => $this->getIdValue()]);
     }
 
     function load(?int $id = null): void
     {
-        $resSt = $this->_db->query("SELECT * FROM  \"{$this->tableName}\"   WHERE \"{$this->idColumnName}\"='{$this->getIdValue()}' ");
+        $cmd="SELECT * FROM  \"{$this->tableName}\"   WHERE \"{$this->idColumnName}\"='{$this->getIdValue()}' ";
+        //echo "$cmd <br/>";
+        $resSt = $this->_db->query($cmd);
         $rows = $resSt->fetchAll(\PDO::FETCH_ASSOC);
-        $this->_loadDataIntoObject($rows);
+        if(count($rows)==0){
+            throw new \Exception("The entry doesn't exists: table {$this->tableName}  {$this->idColumnName}='{$this->getIdValue()}' ");
+        }
+        if(count($rows)>1){
+            throw new \Exception("Unexpected extepcion: more than 1 entry with same ID: table {$this->tableName}  {$this->idColumnName}='{$this->getIdValue()}' ");
+        }
+        $this->_loadDataIntoObject($rows[0]);
     }
 
     function delete(): void
@@ -171,14 +182,18 @@ trait PDOExtended
         if($this->getIdValue() == null){
             throw new \Exception("Error: the object has no ID value");
         }
-        $st = $this->_db->prepare("DELETE FROM \"{$this->tableName}\" WHERE \"{$this->idColumnName}\" = ':IDWAPDOTAG'");
-        $st->execute(['IDWAPDOTAG'=>$this->getIdValue() ])
+        $st = $this->_db->prepare("DELETE FROM \"{$this->tableName}\" WHERE \"{$this->idColumnName}\" = :IDWAPDOTAG");
+        $st->execute([':IDWAPDOTAG'=>$this->getIdValue() ])
             or throw new \Exception("Error trying to delete object in {$this->tableName} with  {$this->idColumnName} = '" . $this->getIdValue() . "'");
     }
 
     function getIdValue(): mixed
     {
         return $this->{$this->idColumnName};
+    }
+
+    function setIdValue(mixed $idValue){
+        $this->{$this->idColumnName}=$idValue;
     }
 
     private function _fetchEntries(string $cmd): null|array
@@ -211,22 +226,28 @@ trait PDOExtended
     }
 */
 
-    private function _getColumnNames(): string
+    private function _getColumnNames(bool $withIdColumn=true): string
     {
         $names = "";
         $separator = "";
         foreach (array_keys($this->_fields) as $name  ) {
+            if ( (!$withIdColumn) && ($name == $this->idColumnName) ){
+                continue;
+            }
             $names .= $separator . '"'.$name. '"';
             $separator = ",";
         }
         return $names;
     }
 
-    private function _getColumnLabelsForPreparedStatement(): string
+    private function _getColumnLabelsForPreparedStatement(bool $withIdColumn=true): string
     {
         $names = "";
         $separator = "";
         foreach (array_keys($this->_fields) as $name  ) {
+            if ( (!$withIdColumn) && ($name == $this->idColumnName) ){
+                continue;
+            }
             $names .= $separator . ':' . $name;
             $separator = ",";
         }
@@ -244,10 +265,13 @@ trait PDOExtended
         }
         return $data;
     }
-    private function _getColumnValuesForPreparedStatement(): array
+    private function _getColumnValuesForPreparedStatement(bool $withIdColumn=true): array
     {
         $values = [];
         foreach ($this->_fields as $name => $type) {
+            if ( (!$withIdColumn) && ($name == $this->idColumnName) ){
+                continue;
+            }
             $value=$this->{$name};
             if($value !== null) {
                 $value=match($type){
@@ -265,6 +289,7 @@ trait PDOExtended
 
 
     private function _loadDataIntoObject(array &$dbData): void{
+        //print_r($dbData);
         foreach($this->_fields as $name => $type){
             $dbValue=$dbData[$name];
             $this->{$name}=$this->_readColData($type, $dbValue);
@@ -277,7 +302,7 @@ trait PDOExtended
         }
         return match($type){
             WebAppType::Date,WebAppType::DateTime, WebAppType::Time=>new \DateTime($data),
-            WebAppType::Bool=>($data==='t'),
+            WebAppType::Bool=>( ($data==='t') || ($data == 1) || ($data === true)),
             default=>$data
 
         };
