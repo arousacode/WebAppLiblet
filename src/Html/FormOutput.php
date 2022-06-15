@@ -188,7 +188,13 @@ private function _printHtmlDouble(string $name, $useObjectValue = true, string $
     {        
         $name=$prop->getName();
         $initValue = $useObjectValue ? $this->$name : '';
-        if([] == $prop->getAttributes("ArousaCode\WebApp\Types\TextArea")){
+        if([] == $prop->getAttributes("ArousaCode\WebApp\Types\Image")){
+            $src = 'data: ' . mime_content_type($initValue) . ';base64,' . $initValue;
+
+            // Echo out a sample image
+            echo '<img src="' . $src . '">';
+        }
+        elseif([] == $prop->getAttributes("ArousaCode\WebApp\Types\TextArea")){
             //Marked as TextArea
             $fieldHTMLsrc = "<textarea name='$name' id='$name' $elementExtraAttributes>$initValue</textarea>";
         }
