@@ -82,11 +82,13 @@ if (isset($_POST['save'])) {
     <input type='button' value='COPIAR' onclick="operation.value='COPY';submit()"/>
     <br />
 
-    ID <?php $userData->printHtmlInputField(name: 'id', elementExtraAttributes:' readonly ' ); ?> <br />
-    Name <?php $userData->printHtmlInputField('sureName'); ?> <br />
-    Age <?php $userData->printHtmlInputField('age'); ?> <br />
-    height <?php $userData->printHtmlInputField('height'); ?> <br />
-    datebir<?php $userData->printHtmlInputField('dateOfBirth'); ?> <br />
+    ID <?php  $userData->printHtmlInputField(name: 'id', elementExtraAttributes:' readonly ' ); ?> <br />
+
+    <?php $userData->printHtmlLabel('sureName', 'Name')?> <?php $userData->printHtmlInputField('sureName'); ?> <br />
+    <?php $userData->printHtmlLabel('age')?> <?php $userData->printHtmlInputField('age'); ?> <br />
+    <?php $userData->printHtmlLabel('height')?> <?php $userData->printHtmlInputField('height'); ?> <br />
+    <?php $userData->printHtmlLabel('dateOfBirth', 'Date of Birth')?> <?php $userData->printHtmlInputField('dateOfBirth'); ?> <br />
+    
     exit time<?php $userData->printHtmlInputField('exitTime'); ?> <br />
     birthday<?php $userData->printHtmlInputField('birthDay'); ?> <br />
     desc <?php $userData->printHtmlInputField('description'); ?> <br />

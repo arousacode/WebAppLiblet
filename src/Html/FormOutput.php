@@ -22,12 +22,27 @@ use ArousaCode\WebApp\Types\WebAppType;
 trait FormOutput
 {
 
+    public function printHtmlLabel(string $name, string $text=null, string $labelExtraAttributes = '', bool $returnAsString = false): mixed{
+        if($text == null){
+            $text=$name;
+        }
+        $labelHTMLsrc="<label $labelExtraAttributes for='$name'>$text</label>";
+        if ($returnAsString) {
+            return $labelHTMLsrc;
+        } else {
+            echo $labelHTMLsrc;
+            return null;
+        }
+
+    }
     public function printHtmlInputField(string $name, $useObjectValue = true, string $elementExtraAttributes = '', bool $returnAsString = false): mixed
     {
         $ref = new \ReflectionClass(static::class);
         $prop = $ref->getProperty($name);
         if (!$prop->isInitialized($this)) {
-            echo "Non inicializada!! ";
+            /* !! Very important.
+            If we print the Form for an empty object, with unitialized properties, thosw shouldn't be used or
+            an error will be raised */
             $useObjectValue = false;
         }
         $type = strval($prop->getType());
@@ -35,7 +50,7 @@ trait FormOutput
             $type = substr($type, 1);
         }
 
-        echo "TIPO : " . $type;
+        //##DEBUG echo "TIPO : " . $type;
         switch ($type) {
             case 'bool':
                 if ($prop->getType()->allowsNull()) {
@@ -188,13 +203,13 @@ private function _printHtmlDouble(string $name, $useObjectValue = true, string $
     {        
         $name=$prop->getName();
         $initValue = $useObjectValue ? $this->$name : '';
-        if([] == $prop->getAttributes("ArousaCode\WebApp\Types\Image")){
+        if([] != $prop->getAttributes("ArousaCode\WebApp\Types\Image")){
             $src = 'data: ' . mime_content_type($initValue) . ';base64,' . $initValue;
 
             // Echo out a sample image
             echo '<img src="' . $src . '">';
         }
-        elseif([] == $prop->getAttributes("ArousaCode\WebApp\Types\TextArea")){
+        elseif([] != $prop->getAttributes("ArousaCode\WebApp\Types\TextArea")){
             //Marked as TextArea
             $fieldHTMLsrc = "<textarea name='$name' id='$name' $elementExtraAttributes>$initValue</textarea>";
         }

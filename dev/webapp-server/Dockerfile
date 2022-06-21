@@ -11,5 +11,6 @@ RUN apt-get update
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get install -y  postgresql-server-dev-all  
 RUN docker-php-ext-install pdo pdo_pgsql 
+RUN pecl install apcu
 RUN docker-php-ext-enable  apcu
 
