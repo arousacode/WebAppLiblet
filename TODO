@@ -1,3 +1,11 @@
+* printField: void (prints) 
+* getField: text (returns text)
+* get/printLabel 
+* get/print LabelField (label + html in between + field)
+
+----------------
+print/get Select(foreignKeyField , TableName, ValueColumnName, TextToShowColumnName, ... style, order, multiple, )
+
 https://carbon.nesbot.com/docs/#api-formatting
 
 
