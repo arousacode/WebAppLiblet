@@ -1,5 +1,4 @@
 <?php
-
 require_once('../../vendor/autoload.php');
 
 use ArousaCode\WebApp\Types\Date;
@@ -7,57 +6,97 @@ use ArousaCode\WebApp\Types\Time;
 use ArousaCode\WebApp\Types\DateTime;
 use ArousaCode\WebApp\Types\TextArea;
 
-class Data{
-
+class Operation
+{
     use \ArousaCode\WebApp\Html\Form;
 
-    public bool $boolData;
-    public ?bool $nullableBoolData; 
-    public string $textData;
-    #[TextArea]
-    public string $textData2;
-    #[Date]
-    public ?\DateTime $tdData1;
-    #[Time]
-    public ?\DateTime $tdData2;
+    public ?string $operation;
+    public ?string $mode = null;
+}
+
+class UserData
+{
+
+    use \ArousaCode\WebApp\Html\Form;
+    use \ArousaCode\WebApp\Pdo\PDOExtended;
+
+    public ?int $id;
+    public string $sureName;
+    public int $age;
+    public float $height;
     #[DateTime]
-    public ?\DateTime $tdData3;
-    public int $intData;
-    public float $floatData;   
-
+    public \DateTime $dateOfBirth;
+    #[Time]
+    public \DateTime $exitTime;
+    #[Date]
+    public \DateTime $birthDay;
+    #[TextArea]
+    public string $description;
+    public bool $chief;
+    public ?bool $question;
 }
 
-$data=new Data();
+$operation = new Operation();
+$operation->loadData(INPUT_POST);
 
-if(isset($_POST['save'])){
-$data->loadData(INPUT_POST);
+$userData = new UserData();
+$userData->initDb(new \PDO("pgsql:dbname=webapp;host=webapp-postgresql","webapp","webapp"));
 
-
-echo "<pre> RECEIVED DATA :\n-------------\n";
-print_r($data);
-
-echo "null : ".($data->nullableBoolData === null)?'nula':'non nula'." \n ";
-echo "false : ".($data->nullableBoolData === false)?'false ':'no false'." \n ";
-echo "</pre>";
+switch ($operation->operation) {
+    case 'SAVE':
+        $userData->loadData(INPUT_POST);
+        $userData->upsert();
+        break;
+    case 'DELETE':
+        $userData->loadData(INPUT_POST);
+        $userData->delete();
+        break;
+    case 'COPY':
+        $userData->id = null;
+        break;
+    default:
+        //No operation requested: We expecto to get an ID passed by GET
+        $userData->id = filter_input(INPUT_GET, 'id');
+        break;
 }
+
+if($userData->id != null){
+    //If there is an ID, we load the data from database. ALso if we have just stored it.
+    $userData->load();
+}
+
+/*
+if (isset($_POST['save'])) {
+    echo "<pre> DEBUG: RECEIVED userData :\n-------------\n";
+    print_r($userData);
+    echo "</pre>";
+}*/
 ?>
 
 <html>
 <form method='POST'>
-<input type='submit' name='save' value='GARDAR' />
-<br/>
+    <input type='hidden' name='operation' value='SAVE'/>
+    <input type='hidden' name='mode' value=''/>
+    <input type='button' value='GARDAR' onclick="operation.value='SAVE';submit()"/>
+    <input type='button' value='BORRAR' onclick="operation.value='DELETE';submit()"/>
+    <input type='button' value='COPIAR' onclick="operation.value='COPY';submit()"/>
+    <br />
 
-<?php $data->printHtmlInputField('boolData'); ?> <br/>
-<?php $data->printHtmlInputField('nullableBoolData'); ?> <br/>
-<?php $data->printHtmlInputField('textData'); ?> <br/>
-<?php $data->printHtmlInputField('textData2'); ?> <br/>
-<?php $data->printHtmlInputField('tdData1'); ?> <br/>
-<?php $data->printHtmlInputField('tdData2'); ?> <br/>
-<?php $data->printHtmlInputField('tdData3'); ?> <br/>
-<?php $data->printHtmlInputField('intData'); ?> <br/>
-<?php $data->printHtmlInputField('floatData'); ?> <br/>
+    ID <?php $userData->printHtmlInputField(name: 'id', elementExtraAttributes:' readonly ' ); ?> <br />
+    Name <?php $userData->printHtmlInputField('sureName'); ?> <br />
+    Age <?php $userData->printHtmlInputField('age'); ?> <br />
+    height <?php $userData->printHtmlInputField('height'); ?> <br />
+    datebir<?php $userData->printHtmlInputField('dateOfBirth'); ?> <br />
+    exit time<?php $userData->printHtmlInputField('exitTime'); ?> <br />
+    birthday<?php $userData->printHtmlInputField('birthDay'); ?> <br />
+    desc <?php $userData->printHtmlInputField('description'); ?> <br />
+    chief <?php $userData->printHtmlInputField('chief'); ?> <br />
+    question<?php $userData->printHtmlInputField('question'); ?> <br />
 
 
+    <input type='button' value='GARDAR' onclick="operation.value='SAVE';submit()"/>
+    <input type='button' value='BORRAR' onclick="operation.value='DELETE';submit()"/>
+    <input type='button' value='COPIAR' onclick="operation.value='COPY';submit()"/>
 
 </form>
 
