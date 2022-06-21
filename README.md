@@ -111,3 +111,11 @@ if (isset($_POST['save'])) {
 </html>
 ```
 
+The rendered HTMl Form will have this aspect:
+## HTML Form rendered
+<p align="center">
+    <img src="https://arousacode.github.io/WebAppLiblet/images/form_example.png">
+</p>
+
+
+[See the docs](https://arousacode.github.io/WebAppLiblet/)
