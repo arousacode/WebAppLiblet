@@ -48,6 +48,7 @@ trait PDOExtended
      */
     protected ?string $tableName = null;
 
+    private string $_fullTableNameForQuery;
     /**
      * It is mandatory to init the library calling once in every object to the init method.
      * PDO object is stored and table name calculated.
@@ -62,8 +63,9 @@ trait PDOExtended
         if ($this->tableName == null) {
             throw new \Exception("Error: can't find out ClassName from fqdn " . static::class);
         }
-        if ($this->schemaName != null) {
-            $this->tableName = $this->schemaName . "." . $this->tableName;
+        if ($this->schemaName!=""){
+            $this->_fullTableNameForQuery = "\"{$this->schemaName}\".\"{$this->tableName}\"";
+            $this->_fullTableNameForQuery = "{$this->_fullTableNameForQuery}";
         }
 
         $fieldCacheName = "AROUSA_CODE_" . static::class;
@@ -81,7 +83,7 @@ trait PDOExtended
             }
 
             //Query field names to be loades/stored in database.
-            $rs = $db->query("SELECT * FROM \"{$this->tableName}\" LIMIT 0");
+            $rs = $db->query("SELECT * FROM {$this->_fullTableNameForQuery} LIMIT 0");
             for ($i = 0; $i < $rs->columnCount(); $i++) {
                 $name = $rs->getColumnMeta($i)['name'];
                 $type = WebAppType::WebAppTypeFromDatabaseType($rs->getColumnMeta($i)['native_type']);
@@ -97,6 +99,8 @@ trait PDOExtended
 //        echo "</pre><hr/>";
     }
 
+ 
+
     /**
      *
      * @return null|integer new ID in case of insert.
@@ -107,7 +111,7 @@ trait PDOExtended
             return $this->insert();
         }
 
-        $cmd = "SELECT \"{$this->idColumnName}\" FROM \"{$this->tableName}\" ";
+        $cmd = "SELECT \"{$this->idColumnName}\" FROM {$this->_fullTableNameForQuery} ";
         $cmd .= "  WHERE  \"{$this->idColumnName}\" = :IDWAPDOTAG ";
         //echo $cmd;
         $sth = $this->_db->prepare($cmd);
@@ -135,7 +139,7 @@ trait PDOExtended
         $columnNames = $this->_getColumnNames($idValueExists);
         $columnLabels = $this->_getColumnLabelsForPreparedStatement($idValueExists);
         $columnValuesSt = $this->_getColumnValuesForPreparedStatement($idValueExists);
-        $cmd="INSERT INTO \"{$this->tableName}\" ($columnNames) VALUES ($columnLabels)";
+        $cmd="INSERT INTO {$this->_fullTableNameForQuery} ($columnNames) VALUES ($columnLabels)";
         $st = $this->_db->prepare($cmd);
         //echo "<pre> $cmd \n ";
        // print_r($columnValuesSt);
@@ -158,13 +162,13 @@ trait PDOExtended
     {
         $updateSt = $this->_getColumnNamesAndLabelsForUpdatePreparedStatement();
         $columnValuesSt = $this->_getColumnValuesForPreparedStatement();
-        $st = $this->_db->prepare("UPDATE \"{$this->tableName}\" SET $updateSt WHERE \"{$this->idColumnName}\"=:IDWAPDOTAG");
+        $st = $this->_db->prepare("UPDATE {$this->_fullTableNameForQuery} SET $updateSt WHERE \"{$this->idColumnName}\"=:IDWAPDOTAG");
         $st->execute($columnValuesSt + [":IDWAPDOTAG" => $this->getIdValue()]);
     }
 
     function load(?int $id = null): void
     {
-        $cmd="SELECT * FROM  \"{$this->tableName}\"   WHERE \"{$this->idColumnName}\"='{$this->getIdValue()}' ";
+        $cmd="SELECT * FROM  {$this->_fullTableNameForQuery}   WHERE \"{$this->idColumnName}\"='{$this->getIdValue()}' ";
         //echo "$cmd <br/>";
         $resSt = $this->_db->query($cmd);
         $rows = $resSt->fetchAll(\PDO::FETCH_ASSOC);
@@ -182,7 +186,7 @@ trait PDOExtended
         if($this->getIdValue() == null){
             throw new \Exception("Error: the object has no ID value");
         }
-        $st = $this->_db->prepare("DELETE FROM \"{$this->tableName}\" WHERE \"{$this->idColumnName}\" = :IDWAPDOTAG");
+        $st = $this->_db->prepare("DELETE FROM {$this->_fullTableNameForQuery} WHERE \"{$this->idColumnName}\" = :IDWAPDOTAG");
         $st->execute([':IDWAPDOTAG'=>$this->getIdValue() ])
             or throw new \Exception("Error trying to delete object in {$this->tableName} with  {$this->idColumnName} = '" . $this->getIdValue() . "'");
     }

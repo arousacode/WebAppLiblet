@@ -39,6 +39,7 @@ trait FormOutput
     {
         $ref = new \ReflectionClass(static::class);
         $prop = $ref->getProperty($name);
+        $required=!$prop->getType()->allowsNull();
         if (!$prop->isInitialized($this)) {
             /* !! Very important.
             If we print the Form for an empty object, with unitialized properties, thosw shouldn't be used or
@@ -63,11 +64,11 @@ trait FormOutput
                 return $this->_printPHPDateTime($prop, $useObjectValue, $elementExtraAttributes, $returnAsString);
                 break;
             case 'int':
-                return $this->_printHtmlNumber($name, $useObjectValue, $elementExtraAttributes, $returnAsString);
+                return $this->_printHtmlNumber($name, $required, $useObjectValue, $elementExtraAttributes, $returnAsString);
                 break;
             case 'float':
             case 'double':
-                return $this->_printHtmlDouble($name, $useObjectValue, $elementExtraAttributes, $returnAsString);
+                return $this->_printHtmlDouble($name, $required, $useObjectValue, $elementExtraAttributes, $returnAsString);
                 break;
                 /* ## TBI 
             case 'array':
@@ -127,20 +128,22 @@ trait FormOutput
     private function _printPHPDateTime(\ReflectionProperty $prop, $useObjectValue = true, string $elementExtraAttributes = '', bool $returnAsString = false): mixed
     {
         $name = $prop->getName();
+        $required=!$prop->getType()->allowsNull();
         return match(WebAppType::WebAppTypeFromProperty($prop)){
-            WebAppType::DateTime => $this->_printHtmlDateTime($name, $useObjectValue, $elementExtraAttributes, $returnAsString),
-            WebAppType::Date     => $this->_printHtmlDate($name, $useObjectValue, $elementExtraAttributes, $returnAsString),
-            WebAppType::Time     => $this->_printHtmlTime($name, $useObjectValue, $elementExtraAttributes, $returnAsString),
+            WebAppType::DateTime => $this->_printHtmlDateTime($name, $required, $useObjectValue, $elementExtraAttributes, $returnAsString),
+            WebAppType::Date     => $this->_printHtmlDate($name, $required, $useObjectValue, $elementExtraAttributes, $returnAsString),
+            WebAppType::Time     => $this->_printHtmlTime($name, $required, $useObjectValue, $elementExtraAttributes, $returnAsString),
             default=> new \Exception("Error: the \DateTime property $name doesn't have defined the subtype using the library Attributes"),
         };
     }
 
-    private function _printHtmlDateTime(string $name, $useObjectValue = true, string $elementExtraAttributes = '', bool $returnAsString = false): mixed
+    private function _printHtmlDateTime(string $name, bool $required, $useObjectValue = true, string $elementExtraAttributes = '', bool $returnAsString = false): mixed
     {
+        $requiredAttribute=$required?" required ":"";
         $initValueDate = $useObjectValue ? $this->$name?->format('Y-m-d') : '';
         $initValueTime = $useObjectValue ? $this->$name?->format('H:i:s') : '';
-        $fieldHTMLsrc = "<input type='date' name='$name' id='$name' value='$initValueDate' $elementExtraAttributes /> : ";
-        $fieldHTMLsrc .= "<input type='time' name='$name' id='$name' value='$initValueTime' $elementExtraAttributes />";
+        $fieldHTMLsrc = "<input $requiredAttribute type='date' name='$name' id='$name' value='$initValueDate' $elementExtraAttributes /> : ";
+        $fieldHTMLsrc .= "<input $requiredAttribute type='time' name='$name' id='$name' value='$initValueTime' $elementExtraAttributes />";
         if ($returnAsString) {
             return $fieldHTMLsrc;
         } else {
@@ -149,10 +152,11 @@ trait FormOutput
         }
     }
 
-    private function _printHtmlDate(string $name, $useObjectValue = true, string $elementExtraAttributes = '', bool $returnAsString = false): mixed
+    private function _printHtmlDate(string $name, bool $required, $useObjectValue = true, string $elementExtraAttributes = '', bool $returnAsString = false): mixed
     {
+        $requiredAttribute=$required?" required ":"";
         $initValue = $useObjectValue ? $this->$name?->format('Y-m-d') : '';
-        $fieldHTMLsrc = "<input type='date' name='$name' id='$name' value='$initValue' $elementExtraAttributes />";
+        $fieldHTMLsrc = "<input  $requiredAttribute type='date' name='$name' id='$name' value='$initValue' $elementExtraAttributes />";
         if ($returnAsString) {
             return $fieldHTMLsrc;
         } else {
@@ -161,10 +165,11 @@ trait FormOutput
         }
     }
 
-    private function _printHtmlTime(string $name, $useObjectValue = true, string $elementExtraAttributes = '', bool $returnAsString = false): mixed
+    private function _printHtmlTime(string $name, bool $required, $useObjectValue = true, string $elementExtraAttributes = '', bool $returnAsString = false): mixed
     {
+        $requiredAttribute=$required?" required ":"";
         $initValue = $useObjectValue ? $this->$name?->format('H:i:s') : '';
-        $fieldHTMLsrc = "<input type='time' name='$name' id='$name' value='$initValue' $elementExtraAttributes />";
+        $fieldHTMLsrc = "<input  $requiredAttribute type='time' name='$name' id='$name' value='$initValue' $elementExtraAttributes />";
         if ($returnAsString) {
             return $fieldHTMLsrc;
         } else {
@@ -173,10 +178,11 @@ trait FormOutput
         }
     }
 
-    private function _printHtmlNumber(string $name, $useObjectValue = true, string $elementExtraAttributes = '', bool $returnAsString = false): mixed
+    private function _printHtmlNumber(string $name, bool $required, $useObjectValue = true, string $elementExtraAttributes = '', bool $returnAsString = false): mixed
     {
+        $requiredAttribute=$required?" required ":"";
         $initValue = $useObjectValue ? $this->$name : '';
-        $fieldHTMLsrc = "<input type='number' name='$name' id='$name' value='$initValue' $elementExtraAttributes />";
+        $fieldHTMLsrc = "<input $requiredAttribute  type='number' name='$name' id='$name' value='$initValue' $elementExtraAttributes />";
         if ($returnAsString) {
             return $fieldHTMLsrc;
         } else {
@@ -185,10 +191,11 @@ trait FormOutput
         }
     }
 
-private function _printHtmlDouble(string $name, $useObjectValue = true, string $elementExtraAttributes = '', bool $returnAsString = false): mixed
+private function _printHtmlDouble(string $name, bool $required, $useObjectValue = true, string $elementExtraAttributes = '', bool $returnAsString = false): mixed
     {
+        $requiredAttribute=$required?" required ":"";
         $initValue = $useObjectValue ? $this->$name : '';
-        $fieldHTMLsrc = "<input type='text' name='$name' title='Número decimal con signo, p.ex. 34.56 o -123.5'  pattern='^-?\d*(\.\d+)?$' id='$name' value='$initValue' $elementExtraAttributes />";
+        $fieldHTMLsrc = "<input  $requiredAttribute type='text' name='$name' title='Número decimal con signo, p.ex. 34.56 o -123.5'  pattern='^-?\d*(\.\d+)?$' id='$name' value='$initValue' $elementExtraAttributes />";
         if ($returnAsString) {
             return $fieldHTMLsrc;
         } else {
@@ -202,19 +209,24 @@ private function _printHtmlDouble(string $name, $useObjectValue = true, string $
     private function _printHtmlText(\ReflectionProperty $prop, $useObjectValue = true, string $elementExtraAttributes = '', bool $returnAsString = false): mixed
     {        
         $name=$prop->getName();
+        $requiredAttribute=(!$prop->getType()->allowsNull())?" required ":"";
         $initValue = $useObjectValue ? $this->$name : '';
         if([] != $prop->getAttributes("ArousaCode\WebApp\Types\Image")){
             $src = 'data: ' . mime_content_type($initValue) . ';base64,' . $initValue;
 
             // Echo out a sample image
-            echo '<img src="' . $src . '">';
+            echo '<img $requiredAttribute src="' . $src . '">';
         }
         elseif([] != $prop->getAttributes("ArousaCode\WebApp\Types\TextArea")){
             //Marked as TextArea
-            $fieldHTMLsrc = "<textarea name='$name' id='$name' $elementExtraAttributes>$initValue</textarea>";
+            $fieldHTMLsrc = "<textarea $requiredAttribute name='$name' id='$name' $elementExtraAttributes>$initValue</textarea>";
+        }
+        elseif([] != $prop->getAttributes("ArousaCode\WebApp\Types\Hidden")){
+            //Marked as Hidden
+            $fieldHTMLsrc = "<input $requiredAttribute type='hidden' name='$name' id='$name' value='$initValue' $elementExtraAttributes />";
         }
         else{
-            $fieldHTMLsrc = "<input type='text' name='$name' id='$name' value='$initValue' $elementExtraAttributes />";
+            $fieldHTMLsrc = "<input $requiredAttribute type='text' name='$name' id='$name' value='$initValue' $elementExtraAttributes />";
         }
 
         if ($returnAsString) {

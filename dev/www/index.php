@@ -1,6 +1,7 @@
 <?php
 require_once('../../vendor/autoload.php');
 
+use ArousaCode\WebApp\Types\Hidden;
 use ArousaCode\WebApp\Types\Date;
 use ArousaCode\WebApp\Types\Time;
 use ArousaCode\WebApp\Types\DateTime;
@@ -36,10 +37,36 @@ class UserData
     public ?bool $question;
 }
 
+class UserData2
+{
+
+    use \ArousaCode\WebApp\Html\Form;
+    use \ArousaCode\WebApp\Pdo\PDOExtended;
+
+    public ?int $id;
+    #[Hidden]
+    public string $sureName;
+    public int $age;
+    public float $height;
+    #[DateTime]
+    public \DateTime $dateOfBirth;
+    #[Time]
+    public \DateTime $exitTime;
+    #[Date]
+    public ?\DateTime $birthDay;
+    #[TextArea]
+    public string $description;
+    public bool $chief;
+    public ?bool $question;
+
+    public function __construct(){
+        $this->schemaName="Test";
+    }
+}
 $operation = new Operation();
 $operation->loadData(INPUT_POST);
 
-$userData = new UserData();
+$userData = new UserData2();
 $userData->initDb(new \PDO("pgsql:dbname=webapp;host=webapp-postgresql","webapp","webapp"));
 
 switch ($operation->operation) {
@@ -72,14 +99,15 @@ if (isset($_POST['save'])) {
     echo "</pre>";
 }*/
 ?>
-
+<! DOCTYPE html>
 <html>
 <form method='POST'>
     <input type='hidden' name='operation' value='SAVE'/>
     <input type='hidden' name='mode' value=''/>
-    <input type='button' value='GARDAR' onclick="operation.value='SAVE';submit()"/>
-    <input type='button' value='BORRAR' onclick="operation.value='DELETE';submit()"/>
-    <input type='button' value='COPIAR' onclick="operation.value='COPY';submit()"/>
+    <input type='submit' value='GARDAR' />
+    <input type='submit' value='GARDAR' onclick="operation.value='SAVE';return true;"/>
+    <input type='submit' value='BORRAR' onclick="operation.value='DELETE';return true;"/>
+    <input type='submit' value='COPIAR' onclick="operation.value='COPY';return true;"/>
     <br />
 
     ID <?php  $userData->printHtmlInputField(name: 'id', elementExtraAttributes:' readonly ' ); ?> <br />
@@ -96,7 +124,7 @@ if (isset($_POST['save'])) {
     question<?php $userData->printHtmlInputField('question'); ?> <br />
 
 
-    <input type='button' value='GARDAR' onclick="operation.value='SAVE';submit()"/>
+    <input type='button' value='GARDAR' onclick="operation.value='SAVE'; submit()"/>
     <input type='button' value='BORRAR' onclick="operation.value='DELETE';submit()"/>
     <input type='button' value='COPIAR' onclick="operation.value='COPY';submit()"/>
 
