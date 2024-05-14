@@ -5,14 +5,17 @@ use ArousaCode\WebApp\Types\Hidden;
 use ArousaCode\WebApp\Types\Date;
 use ArousaCode\WebApp\Types\Time;
 use ArousaCode\WebApp\Types\DateTime;
+use ArousaCode\WebApp\Types\Selection;
 use ArousaCode\WebApp\Types\TextArea;
 
 class Operation
 {
     use \ArousaCode\WebApp\Html\Form;
 
-    public ?string $operation;
-    public ?string $mode = null;
+    #[Hidden]
+    public ?string $operation='SAVE';
+    #[Hidden]
+    public ?string $mode=null;
 }
 
 class UserData
@@ -35,6 +38,9 @@ class UserData
     public string $description;
     public bool $chief;
     public ?bool $question;
+
+    #[Selection(schemaName:'Test',tableName:'Options',valueColumn:'value',descColumn:'desceription')]
+    public string $selection;
 }
 
 class UserData2
@@ -66,8 +72,9 @@ class UserData2
 $operation = new Operation();
 $operation->loadData(INPUT_POST);
 
-$userData = new UserData2();
-$userData->initDb(new \PDO("pgsql:dbname=webapp;host=webapp-postgresql","webapp","webapp"));
+$userData = new UserData();
+$pdo=new \PDO("pgsql:dbname=webapp;host=webapp-postgresql","webapp","webapp");
+$userData->initDb($pdo);
 
 switch ($operation->operation) {
     case 'SAVE':
@@ -102,8 +109,8 @@ if (isset($_POST['save'])) {
 <! DOCTYPE html>
 <html>
 <form method='POST'>
-    <input type='hidden' name='operation' value='SAVE'/>
-    <input type='hidden' name='mode' value=''/>
+    <?php $userData->printHtmlInputField('operation'); ?> 
+    <?php $userData->printHtmlInputField('mode'); ?> 
     <input type='submit' value='GARDAR' />
     <input type='submit' value='GARDAR' onclick="operation.value='SAVE';return true;"/>
     <input type='submit' value='BORRAR' onclick="operation.value='DELETE';return true;"/>
@@ -122,6 +129,8 @@ if (isset($_POST['save'])) {
     desc <?php $userData->printHtmlInputField('description'); ?> <br />
     chief <?php $userData->printHtmlInputField('chief'); ?> <br />
     question<?php $userData->printHtmlInputField('question'); ?> <br />
+    
+    question<?php $userData->printHtmlInputField('selection'); ?> <br />
 
 
     <input type='button' value='GARDAR' onclick="operation.value='SAVE'; submit()"/>

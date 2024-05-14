@@ -40,6 +40,8 @@ enum WebAppType
     case NullableBool;
     case NonNullableBool;
     case Image;
+    case Hidden;
+    case Selection;
 
     /**
      * Find out if the Web app type of the property
@@ -63,8 +65,9 @@ enum WebAppType
         print_r($res3);
         echo "</pre>";
 */
-
-        if ([] !== $prop->getAttributes("ArousaCode\WebApp\Types\Date")) {
+        if ([] !== $prop->getAttributes("ArousaCode\WebApp\Types\Hidden")) {
+            return WebAppType::Hidden;
+        } elseif ([] !== $prop->getAttributes("ArousaCode\WebApp\Types\Date")) {
             return WebAppType::Date;
         } elseif ([] !== $prop->getAttributes("ArousaCode\WebApp\Types\Time")) {
             return WebAppType::Time;
@@ -74,6 +77,8 @@ enum WebAppType
             return WebAppType::TextArea;
         } elseif ([] !== $prop->getAttributes("ArousaCode\WebApp\Types\DateTime")) {
             return WebAppType::DateTime;
+        } elseif ([] !== $prop->getAttributes("ArousaCode\WebApp\Types\Selection")) {
+            return WebAppType::Selection;
         } elseif ([] !== $prop->getAttributes("ArousaCode\WebApp\Types\Image")) {
             return WebAppType::Image;
         } elseif ($prop->getType()->getName() == 'bool') {
@@ -93,7 +98,7 @@ enum WebAppType
         }
     }
 
-     /**
+    /**
      * Find out if the Web app type of the database column
      *
      * @param string $dbTypeM 
@@ -101,15 +106,15 @@ enum WebAppType
      */
     public static function WebAppTypeFromDatabaseType(string $dbType): ?WebAppType
     {
-        return match($dbType){
-            'int4'=>WebAppType::Int,
-            'numeric'=>WebAppType::Float,
-            'date'=>WebAppType::Date,
-            'time'=>WebAppType::Time,
-            'timestamp'=>WebAppType::DateTime,
-            'bool'=>WebAppType::Bool,
-            'text'=>WebAppType::Text,
-            default=>WebAppType::Text
+        return match ($dbType) {
+            'int4' => WebAppType::Int,
+            'numeric' => WebAppType::Float,
+            'date' => WebAppType::Date,
+            'time' => WebAppType::Time,
+            'timestamp' => WebAppType::DateTime,
+            'bool' => WebAppType::Bool,
+            'text' => WebAppType::Text,
+            default => WebAppType::Text
         };
     }
 }

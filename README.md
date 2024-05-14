@@ -13,13 +13,16 @@ use ArousaCode\WebApp\Types\Date;
 use ArousaCode\WebApp\Types\Time;
 use ArousaCode\WebApp\Types\DateTime;
 use ArousaCode\WebApp\Types\TextArea;
+use ArousaCode\WebApp\Types\Hidden;
 
 class Operation
 {
     use \ArousaCode\WebApp\Html\Form;
 
-    public ?string $operation;
-    public ?string $mode = null;
+    #[Hidden]
+    public ?string $operation='SAVE';
+    #[Hidden]
+    public ?string $mode=null;
 }
 
 class UserData
@@ -83,8 +86,8 @@ if (isset($_POST['save'])) {
 
 <html>
 <form method='POST'>
-    <input type='hidden' name='operation' value='SAVE'/>
-    <input type='hidden' name='mode' value=''/>
+    <?php $userData->printHtmlInputField('operation'); ?> 
+    <?php $userData->printHtmlInputField('mode'); ?> 
     <input type='button' value='GARDAR' onclick="operation.value='SAVE';submit()"/>
     <input type='button' value='BORRAR' onclick="operation.value='DELETE';submit()"/>
     <input type='button' value='COPIAR' onclick="operation.value='COPY';submit()"/>

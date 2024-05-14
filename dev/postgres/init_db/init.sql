@@ -27,3 +27,13 @@ CREATE TABLE "Test"."UserData2"(
     question boolean
 
 );
+
+CREATE TABLE "Test"."Options"(
+    id serial PRIMARY KEY,
+    "value" text,
+    "description" text
+);
+
+INSERT INTO  "Test"."Options" (value,description) VALUES ('Value1', 'Desc1');
+INSERT INTO  "Test"."Options" (value,description) VALUES ('Value2', 'Desc2');
+INSERT INTO  "Test"."Options" (value,description) VALUES ('Value3', 'Desc3');

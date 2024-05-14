@@ -35,7 +35,7 @@ trait FormOutput
             return null;
         }
     }
-    public function printHtmlInputField(string $name, $useObjectValue = true, string $elementExtraAttributes = '', bool $returnAsString = false): mixed
+    public function printHtmlInputField(string $name, $useObjectValue = true, string $elementExtraAttributes = '', bool $returnAsString = false, \Pdo $pdo = null): mixed
     {
         $ref = new \ReflectionClass(static::class);
         $prop = $ref->getProperty($name);
@@ -52,10 +52,13 @@ trait FormOutput
         }
 
         /** IF marked as Hidden, then input type=hidden */
-        if ([] != $prop->getAttributes("ArousaCode\WebApp\Types\Hidden")) {
+        if (WebAppType::Hidden == WebAppType::WebAppTypeFromProperty($prop)) {
             return $this->_printHtmlHidden($prop, $useObjectValue, $elementExtraAttributes, $returnAsString);
         }
-
+        /** IF marked as Selection, then <select ... */
+        if (WebAppType::Selection == WebAppType::WebAppTypeFromProperty($prop)) {
+            return $this->_printHtmlSelection($prop, $useObjectValue, $elementExtraAttributes, $returnAsString, $pdo);
+        }
         //##DEBUG echo "TIPO : " . $type;
         switch ($type) {
             case 'bool':
@@ -216,12 +219,12 @@ trait FormOutput
         $name = $prop->getName();
         $requiredAttribute = (!$prop->getType()->allowsNull()) ? " required " : "";
         $initValue = $useObjectValue ? $this->$name : '';
-        if ([] != $prop->getAttributes("ArousaCode\WebApp\Types\Image")) {
+        if (WebAppType::Image == WebAppType::WebAppTypeFromProperty($prop)) {
             $src = 'data: ' . mime_content_type($initValue) . ';base64,' . $initValue;
 
             // Echo out a sample image
             echo '<img $requiredAttribute src="' . $src . '">';
-        } elseif ([] != $prop->getAttributes("ArousaCode\WebApp\Types\TextArea")) {
+        } elseif (WebAppType::TextArea == WebAppType::WebAppTypeFromProperty($prop)) {
             //Marked as TextArea
             $fieldHTMLsrc = "<textarea $requiredAttribute name='$name' id='$name' $elementExtraAttributes>$initValue</textarea>";
         } else {
@@ -242,6 +245,67 @@ trait FormOutput
         $requiredAttribute = (!$prop->getType()->allowsNull()) ? " required " : "";
         $initValue = $useObjectValue ? $this->$name : '';
         $fieldHTMLsrc = "<input $requiredAttribute type='hidden' name='$name' id='$name' value='$initValue' $elementExtraAttributes />";
+        if ($returnAsString) {
+            return $fieldHTMLsrc;
+        } else {
+            echo $fieldHTMLsrc;
+            return null;
+        }
+    }
+
+    private function _printHtmlSelection(\ReflectionProperty $prop, $useObjectValue = true, string $elementExtraAttributes = '', bool $returnAsString = false, \PDO $pdo): mixed
+    {
+        $name = $prop->getName();
+        $requiredAttribute = (!$prop->getType()->allowsNull()) ? " required " : "";
+        $initValue = $useObjectValue ? $this->$name : '';
+        $attributes = $prop->getAttributes('ArousaCode\WebApp\Types\Selection');
+        $arguments = $attributes[0]->getArguments();
+
+        $fullSqlTableName = '"' . $arguments['tableName'] . '"';
+        if (isset($arguments['schemaName'])) {
+            $fullSqlTableName = '"' . $arguments['schemaName'] . '"."' . $arguments['tableName'] . '"';
+        } else {
+            $fullSqlTableName = '"' . $arguments['tableName'] . '"';
+        }
+
+        $sqlValueCol = '"' . $arguments['valueColumn'] . '"';
+
+        if (isset($arguments['descColum'])) {
+
+            $sqlDescCol = '"' . $arguments['descColumn'] . '"';
+        } else {
+            $sqlDescCol = $sqlValueCol;
+        }
+
+        $multiple=$arguments['multiple']? "multiple ":"";
+
+        if (isset($arguments['sqlOrder'])) {
+            $sqlOrder=" ORDER BY ".$arguments['sqlOrder']." ";
+        }
+        else{
+            $sqlOrder="";
+        }
+
+        if (isset($arguments['sqlFilter'])) {
+            $sqlFilter=" WHERE ".$arguments['sqlFilter']." ";
+        }
+        else{
+            $sqlFilter="";
+        }
+
+        
+        $cmd="SELECT $sqlValueCol, $sqlDescCol FROM  $fullSqlTableName $sqlFilter $sqlOrder";
+        //echo "$cmd <br/>";
+        $resSt = $this->_db->query($cmd);
+        $rows = $resSt->fetchAll(\PDO::FETCH_BOTH);
+
+        $fieldHTMLsrc = "<select  $requiredAttribute  name='$name' id='$name' $multiple $elementExtraAttributes />";
+        foreach($rows as $row){
+            $selected=($initValue==$row[0])?" selected ":"";
+            echo "<option $selected value='{$row[0]}'>{$row[1]}</option>";
+
+        }
+        $fieldHTMLsrc.=" </select>";
         if ($returnAsString) {
             return $fieldHTMLsrc;
         } else {
