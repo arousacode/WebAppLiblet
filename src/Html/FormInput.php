@@ -13,6 +13,8 @@
 
 namespace ArousaCode\WebApp\Html;
 
+use ArousaCode\WebApp\Types\WebAppType;
+
 trait FormInput
 {
      /**
@@ -33,7 +35,12 @@ trait FormInput
         foreach ($props as $prop) {
             $propName = $prop->getName();
 
-            $data = filter_input($type, $propName, $filter);
+            if(WebAppType::DateTime == WebAppType::WebAppTypeFromProperty($prop)){
+                $data = filter_input($type, $propName, $filter, FILTER_REQUIRE_ARRAY);
+            }
+            else{
+                $data = filter_input($type, $propName, $filter);
+            }
 
             if ($data === false) {
                 throw new \Exception("Erro filtrando propieade $propName con valor " . filter_input($type, $propName));
@@ -59,7 +66,13 @@ trait FormInput
                 return ($data == '1');
                 break;
             case 'DateTime':
-                return ($data != '') ? new \DateTime($data) : null;
+                if(WebAppType::DateTime == WebAppType::WebAppTypeFromProperty($prop)){
+                    ##DEBUGprint_r($prop);print_r($data);exit;
+                    return ($data != '') ? (new \DateTime($data[0]." ".$data[1])) : null;    
+                }
+                else{
+                    return ($data != '') ? new \DateTime($data) : null;
+                }
                 break;
             case 'int':
                 return ($data=='')?null:intval($data);

@@ -21,23 +21,39 @@ use ArousaCode\WebApp\Pdo\PDOExtended;
 #[\Attribute(\Attribute::TARGET_PROPERTY)]
 class Selection
 {
+
+  public  string $tableName;
+  public  ?string $schemaName=null;
+  public string $valueColumn;
+  public ?string $descColumn = null;
+  public bool $multiple = false;
+  /**
+   * User must guaranty sql safe values.
+   * Use double colons to special characters or upptercase column names
+   */
+  public ?string $sqlOrder = null;
+  /**
+   * User must guaranty sql safe values
+   * Use double colons to special characters or upptercase column names
+   */
+  public ?string $sqlFilter = null;
+
   function __construct(
-    public  string $tableName,
-    public  ?string $schemaName=null,
-    public string $valueColumn,
-    public ?string $descColumn = null,
-    public bool $multiple = false,
-    /**
-     * User must guaranty sql safe values.
-     * Use double colons to special characters or upptercase column names
-     */
-    public ?string $sqlOrder = null,
-    /**
-     * User must guaranty sql safe values
-     * Use double colons to special characters or upptercase column names
-     */
-    public ?string $sqlFilter = null
+    string $tableName,
+    string $valueColumn,
+    ?string $schemaName=null,
+    ?string $descColumn = null,
+    bool $multiple = false,
+    ?string $sqlOrder = null,
+    ?string $sqlFilter = null
   ){    
+    $this->tableName=$tableName;
+    $this->schemaName=$schemaName;
+    $this->valueColumn=$valueColumn;
+    $this->descColumn=$descColumn;
+    $this->multiple=$multiple;
+    $this->sqlOrder=$sqlOrder;
+    $this->sqlFilter=$sqlFilter;
   }
 
 }

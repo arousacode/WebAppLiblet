@@ -57,7 +57,7 @@ trait FormOutput
         }
         /** IF marked as Selection, then <select ... */
         if (WebAppType::Selection == WebAppType::WebAppTypeFromProperty($prop)) {
-            return $this->_printHtmlSelection($prop, $useObjectValue, $elementExtraAttributes, $returnAsString, $pdo);
+            return $this->_printHtmlSelection($prop,$pdo, $useObjectValue, $elementExtraAttributes, $returnAsString );
         }
         //##DEBUG echo "TIPO : " . $type;
         switch ($type) {
@@ -150,8 +150,8 @@ trait FormOutput
         $requiredAttribute = $required ? " required " : "";
         $initValueDate = $useObjectValue ? $this->$name?->format('Y-m-d') : '';
         $initValueTime = $useObjectValue ? $this->$name?->format('H:i:s') : '';
-        $fieldHTMLsrc = "<input $requiredAttribute type='date' name='$name' id='$name' value='$initValueDate' $elementExtraAttributes /> : ";
-        $fieldHTMLsrc .= "<input $requiredAttribute type='time' name='$name' id='$name' value='$initValueTime' $elementExtraAttributes />";
+        $fieldHTMLsrc = "<input $requiredAttribute type='date' name='{$name}[]' id='$name' value='$initValueDate' $elementExtraAttributes /> : ";
+        $fieldHTMLsrc .= "<input $requiredAttribute type='time' name='{$name}[]' id='$name' value='$initValueTime' $elementExtraAttributes />";
         if ($returnAsString) {
             return $fieldHTMLsrc;
         } else {
@@ -253,14 +253,15 @@ trait FormOutput
         }
     }
 
-    private function _printHtmlSelection(\ReflectionProperty $prop, $useObjectValue = true, string $elementExtraAttributes = '', bool $returnAsString = false, \PDO $pdo): mixed
+    private function _printHtmlSelection(\ReflectionProperty $prop, \PDO $pdo, $useObjectValue = true, string $elementExtraAttributes = '', bool $returnAsString = false): mixed
     {
         $name = $prop->getName();
-        $requiredAttribute = (!$prop->getType()->allowsNull()) ? " required " : "";
+        $requiredAttribute = !$prop->getType()->allowsNull();
         $initValue = $useObjectValue ? $this->$name : '';
         $attributes = $prop->getAttributes('ArousaCode\WebApp\Types\Selection');
         $arguments = $attributes[0]->getArguments();
 
+        
         $fullSqlTableName = '"' . $arguments['tableName'] . '"';
         if (isset($arguments['schemaName'])) {
             $fullSqlTableName = '"' . $arguments['schemaName'] . '"."' . $arguments['tableName'] . '"';
@@ -270,14 +271,14 @@ trait FormOutput
 
         $sqlValueCol = '"' . $arguments['valueColumn'] . '"';
 
-        if (isset($arguments['descColum'])) {
+        if (isset($arguments['descColumn'])) {
 
             $sqlDescCol = '"' . $arguments['descColumn'] . '"';
         } else {
             $sqlDescCol = $sqlValueCol;
         }
 
-        $multiple=$arguments['multiple']? "multiple ":"";
+        $multiple=$arguments['multiple']??false? "multiple ":"";
 
         if (isset($arguments['sqlOrder'])) {
             $sqlOrder=" ORDER BY ".$arguments['sqlOrder']." ";
@@ -300,9 +301,12 @@ trait FormOutput
         $rows = $resSt->fetchAll(\PDO::FETCH_BOTH);
 
         $fieldHTMLsrc = "<select  $requiredAttribute  name='$name' id='$name' $multiple $elementExtraAttributes />";
+        if(!$requiredAttribute){
+            $fieldHTMLsrc.= "<option value=''></option>";
+        }
         foreach($rows as $row){
             $selected=($initValue==$row[0])?" selected ":"";
-            echo "<option $selected value='{$row[0]}'>{$row[1]}</option>";
+            $fieldHTMLsrc.= "<option $selected value='{$row[0]}'>{$row[1]}</option>";
 
         }
         $fieldHTMLsrc.=" </select>";

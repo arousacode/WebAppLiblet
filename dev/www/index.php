@@ -13,9 +13,9 @@ class Operation
     use \ArousaCode\WebApp\Html\Form;
 
     #[Hidden]
-    public ?string $operation='SAVE';
+    public ?string $operation = null;
     #[Hidden]
-    public ?string $mode=null;
+    public ?string $mode = null;
 }
 
 class UserData
@@ -39,10 +39,10 @@ class UserData
     public bool $chief;
     public ?bool $question;
 
-    #[Selection(schemaName:'Test',tableName:'Options',valueColumn:'value',descColumn:'desceription')]
-    public string $selection;
+    #[Selection(schemaName: 'Test', tableName: 'Options', valueColumn: 'value', descColumn: 'description')]
+    public ?string $selection;
 }
-
+/*
 class UserData2
 {
 
@@ -65,15 +65,16 @@ class UserData2
     public bool $chief;
     public ?bool $question;
 
-    public function __construct(){
-        $this->schemaName="Test";
+    public function __construct()
+    {
+        $this->schemaName = "Test";
     }
-}
+}*/
 $operation = new Operation();
 $operation->loadData(INPUT_POST);
 
 $userData = new UserData();
-$pdo=new \PDO("pgsql:dbname=webapp;host=webapp-postgresql","webapp","webapp");
+$pdo = new \PDO("pgsql:dbname=webapp;host=webapp-postgresql", "webapp", "webapp");
 $userData->initDb($pdo);
 
 switch ($operation->operation) {
@@ -94,7 +95,7 @@ switch ($operation->operation) {
         break;
 }
 
-if($userData->id != null){
+if ($userData->id != null) {
     //If there is an ID, we load the data from database. ALso if we have just stored it.
     $userData->load();
 }
@@ -107,36 +108,36 @@ if (isset($_POST['save'])) {
 }*/
 ?>
 <! DOCTYPE html>
-<html>
-<form method='POST'>
-    <?php $userData->printHtmlInputField('operation'); ?> 
-    <?php $userData->printHtmlInputField('mode'); ?> 
-    <input type='submit' value='GARDAR' />
-    <input type='submit' value='GARDAR' onclick="operation.value='SAVE';return true;"/>
-    <input type='submit' value='BORRAR' onclick="operation.value='DELETE';return true;"/>
-    <input type='submit' value='COPIAR' onclick="operation.value='COPY';return true;"/>
-    <br />
+    <html>
+    <form method='POST'>
+        <?php $operation->printHtmlInputField('operation'); ?>
+        <?php $operation->printHtmlInputField('mode'); ?>
+        <input type='submit' value='GARDAR' />
+        <input type='submit' value='GARDAR' onclick="operation.value='SAVE';return true;" />
+        <input type='submit' value='BORRAR' onclick="operation.value='DELETE';return true;" />
+        <input type='submit' value='COPIAR' onclick="operation.value='COPY';return true;" />
+        <br />
 
-    ID <?php  $userData->printHtmlInputField(name: 'id', elementExtraAttributes:' readonly ' ); ?> <br />
+        ID <?php $userData->printHtmlInputField(name: 'id', elementExtraAttributes: ' readonly '); ?> <br />
 
-    <?php $userData->printHtmlLabel('sureName', 'Name')?> <?php $userData->printHtmlInputField('sureName'); ?> <br />
-    <?php $userData->printHtmlLabel('age')?> <?php $userData->printHtmlInputField('age'); ?> <br />
-    <?php $userData->printHtmlLabel('height')?> <?php $userData->printHtmlInputField('height'); ?> <br />
-    <?php $userData->printHtmlLabel('dateOfBirth', 'Date of Birth')?> <?php $userData->printHtmlInputField('dateOfBirth'); ?> <br />
-    
-    exit time<?php $userData->printHtmlInputField('exitTime'); ?> <br />
-    birthday<?php $userData->printHtmlInputField('birthDay'); ?> <br />
-    desc <?php $userData->printHtmlInputField('description'); ?> <br />
-    chief <?php $userData->printHtmlInputField('chief'); ?> <br />
-    question<?php $userData->printHtmlInputField('question'); ?> <br />
-    
-    question<?php $userData->printHtmlInputField('selection'); ?> <br />
+        <?php $userData->printHtmlLabel('sureName', 'Name') ?> <?php $userData->printHtmlInputField('sureName'); ?> <br />
+        <?php $userData->printHtmlLabel('age') ?> <?php $userData->printHtmlInputField('age'); ?> <br />
+        <?php $userData->printHtmlLabel('height') ?> <?php $userData->printHtmlInputField('height'); ?> <br />
+        <?php $userData->printHtmlLabel('dateOfBirth', 'Date of Birth') ?> <?php $userData->printHtmlInputField('dateOfBirth'); ?> <br />
+
+        exit time<?php $userData->printHtmlInputField('exitTime'); ?> <br />
+        birthday<?php $userData->printHtmlInputField('birthDay'); ?> <br />
+        desc <?php $userData->printHtmlInputField('description'); ?> <br />
+        chief <?php $userData->printHtmlInputField('chief'); ?> <br />
+        question<?php $userData->printHtmlInputField('question'); ?> <br />
+
+        question<?php $userData->printHtmlInputField(name:'selection', pdo:$pdo); ?> <br />
 
 
-    <input type='button' value='GARDAR' onclick="operation.value='SAVE'; submit()"/>
-    <input type='button' value='BORRAR' onclick="operation.value='DELETE';submit()"/>
-    <input type='button' value='COPIAR' onclick="operation.value='COPY';submit()"/>
+        <input type='button' value='GARDAR' onclick="operation.value='SAVE'; submit()" />
+        <input type='button' value='BORRAR' onclick="operation.value='DELETE';submit()" />
+        <input type='button' value='COPIAR' onclick="operation.value='COPY';submit()" />
 
-</form>
+    </form>
 
-</html>
+    </html>

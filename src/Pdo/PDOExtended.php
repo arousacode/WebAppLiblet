@@ -65,7 +65,9 @@ trait PDOExtended
         }
         if ($this->schemaName!=""){
             $this->_fullTableNameForQuery = "\"{$this->schemaName}\".\"{$this->tableName}\"";
-            $this->_fullTableNameForQuery = "{$this->_fullTableNameForQuery}";
+        }
+        else{
+            $this->_fullTableNameForQuery = "\"{$this->tableName}\"";
         }
 
         $fieldCacheName = "AROUSA_CODE_" . static::class;
