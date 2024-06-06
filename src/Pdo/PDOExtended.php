@@ -71,7 +71,7 @@ trait PDOExtended
         }
 
         $fieldCacheName = "AROUSA_CODE_" . static::class;
-        $res = false; /// DEBUG descomenar. apcu_fetch($fieldCacheName);
+        $res = false; //DEBUG: descomentar apcu_fetch($fieldCacheName);
         if ($res !== false) {
             $this->_fields = $res;
         } else {

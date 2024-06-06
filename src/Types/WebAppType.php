@@ -110,8 +110,11 @@ enum WebAppType
             'int4' => WebAppType::Int,
             'numeric' => WebAppType::Float,
             'date' => WebAppType::Date,
+            'datetz' => WebAppType::Date,
             'time' => WebAppType::Time,
+            'timetz' => WebAppType::Time,
             'timestamp' => WebAppType::DateTime,
+            'timestamptz' => WebAppType::DateTime,
             'bool' => WebAppType::Bool,
             'text' => WebAppType::Text,
             default => WebAppType::Text
